@@ -1,18 +1,7 @@
 [@@@ocaml.warning "-21-32-69"]
 
 open Js_of_ocaml
-
-let engine = Js.Unsafe.pure_js_expr "Matter.Engine"
-let render = Js.Unsafe.pure_js_expr "Matter.Render"
-let runner = Js.Unsafe.pure_js_expr "Matter.Runner"
-let bodies = Js.Unsafe.pure_js_expr "Matter.Bodies"
-let body = Js.Unsafe.pure_js_expr "Matter.Body"
-let composite = Js.Unsafe.pure_js_expr "Matter.Composite"
-let mouse = Js.Unsafe.pure_js_expr "Matter.Mouse"
-let mouseConstraint = Js.Unsafe.pure_js_expr "Matter.MouseConstraint"
-let events = Js.Unsafe.pure_js_expr "Matter.Events"
-let sleeping = Js.Unsafe.pure_js_expr "Matter.Sleeping"
-let vector = Js.Unsafe.pure_js_expr "Matter.Vector"
+open Matter
 
 
 let iEngine = engine##create ()
@@ -63,28 +52,6 @@ let canvas = iRender##.canvas
       end
 
    let () = iRender##.mouse := iMouse *)
-
-class type vectorClass = object
-  method x : float Js.prop
-  method y : float Js.prop
-end
-
-module Vector = struct
-  let add : vectorClass Js.t -> vectorClass Js.t -> vectorClass Js.t =
-    fun p q ->
-      vector##add p q
-
-  let mult : vectorClass Js.t -> float -> vectorClass Js.t =
-    fun p x ->
-    vector##mult p x
-end
-
-class type bodyClass = object
-  method isSensor : bool Js.prop
-  method label : string Js.prop
-  method position : vectorClass Js.prop
-  method velocity : vectorClass Js.prop
-end
 
 module Game = struct
   let basketLeft = windowWidth*1/4
@@ -235,7 +202,7 @@ module Game = struct
                     Array.unsafe_get ballArray index in
                   if (basketLeft + edgeWidth /2 < x - int_of_float size
                       && x + int_of_float size < basketRight - edgeWidth/2) then
-                    body##setPosition n (vector##create x 20)));
+                    body##setPosition n (Vector.create x 20)));
               Js._false))
         Js._false in
     let id1 =
