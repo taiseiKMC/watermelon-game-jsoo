@@ -1,5 +1,6 @@
 open Js_of_ocaml
 
+(* Bind Js modules *)
 let engine = Js.Unsafe.pure_js_expr "Matter.Engine"
 let render = Js.Unsafe.pure_js_expr "Matter.Render"
 let runner = Js.Unsafe.pure_js_expr "Matter.Runner"
@@ -21,7 +22,10 @@ end
 module Vector = struct
   (* Should extract all arguments because of the specification of Js_of_ocaml.
      (Js cannot do partial appications) *)
-  let create : int -> int -> vectorClass Js.t = fun x y -> vector##create x y
+  let create : int -> int -> vectorClass Js.t =
+    fun x y -> vector##create x y
+  let create_float : float -> float -> vectorClass Js.t =
+    fun x y -> vector##create x y
 
   let add : vectorClass Js.t -> vectorClass Js.t -> vectorClass Js.t =
     fun p q ->
@@ -33,14 +37,15 @@ module Vector = struct
 end
 
 class type bodyClass = object
-  method position : vectorClass Js.prop
-  method velocity : vectorClass Js.prop
+  method position : vectorClass Js.t Js.readonly_prop
+  method velocity : vectorClass Js.t Js.readonly_prop
   method isSensor : bool Js.prop
   method label : string Js.prop
 end
 
 let resetEngine (iEngine : < world : < > Js.prop > Js.t) =
   let () = composite##clear iEngine##.world in
+  (* Trick to cause the event "afterRender" everytime *)
   composite##add
     iEngine##.world
     [| bodies##rectangle

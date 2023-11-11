@@ -56,12 +56,11 @@ let scene = ref Title
 let game = Game.make ~iEngine ~iRunner ~canvas ~state:st ~windowWidth ~windowHeight ()
 
 let draw () =
-  (* Trick to cause the event "afterRender" everytime *)
   resetEngine iEngine;
   events##on
     iRender
     "afterRender"
-    (fun _e ->
+    (fun _e -> (* Expect to call this every frame *)
        let ctxt : Dom_html.canvasRenderingContext2D Js.t =
          canvas##getContext Dom_html._2d_ in
        match !scene with
