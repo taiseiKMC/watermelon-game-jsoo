@@ -353,28 +353,22 @@ let make ~iEngine ~iRunner ~canvas ~windowWidth ~windowHeight ~state () =
 let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
   let { basket=(module Basket); _ } = t.env in
   let open Basket in
+  ctxt##.font := Js.string "24px serif";
+  ctxt##.fillStyle := Js.string "#000000";
+  ctxt##.textAlign := Js.string "center";
+  ctxt##fillText
+    (Js.string (Format.sprintf "Score: %d" (t.score)))
+    (float_of_int windowWidth /. 8.)
+    (float_of_int windowHeight /. 2.);
   match t.scene with
-  | Game -> (
-      ctxt##.font := Js.string "24px serif";
-      ctxt##.fillStyle := Js.string "#000000";
-      ctxt##.textAlign := Js.string "center";
-      ctxt##fillText
-        (Js.string (Format.sprintf "Score: %d" (t.score)))
-        (float_of_int windowWidth /. 8.)
-        (float_of_int windowHeight /. 2.);)
+  | Game -> ()
   | Over ->
-      (ctxt##.font := Js.string "50px serif";
-       ctxt##.fillStyle := Js.string "#000000";
-       ctxt##.textAlign := Js.string "center";
-       ctxt##fillText
+      (ctxt##fillText
          (Js.string "GameOver")
          (float_of_int windowWidth /. 2.)
          (float_of_int windowHeight /. 2.))
   | WaitRetry ->
-      (ctxt##.font := Js.string "50px serif";
-       ctxt##.fillStyle := Js.string "#000000";
-       ctxt##.textAlign := Js.string "center";
-       ctxt##fillText
+      (ctxt##fillText
          (Js.string "GameOver")
          (float_of_int windowWidth /. 2.)
          (float_of_int windowHeight /. 2.);
