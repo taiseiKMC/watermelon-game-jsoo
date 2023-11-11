@@ -25,7 +25,7 @@ module Vector = struct
 
   let add : vectorClass Js.t -> vectorClass Js.t -> vectorClass Js.t =
     fun p q ->
-      vector##add p q
+    vector##add p q
 
   let mult : vectorClass Js.t -> float -> vectorClass Js.t =
     fun p x ->
@@ -38,3 +38,14 @@ class type bodyClass = object
   method isSensor : bool Js.prop
   method label : string Js.prop
 end
+
+let resetEngine (iEngine : < world : < > Js.prop > Js.t) =
+  let () = composite##clear iEngine##.world in
+  composite##add
+    iEngine##.world
+    [| bodies##rectangle
+         0 0 0 0
+         object%js
+           val isStatic = true
+           val isSensor = true
+         end |]
