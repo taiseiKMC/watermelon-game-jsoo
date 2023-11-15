@@ -96,7 +96,9 @@ module Balls = struct
   (* Ball data *)
   type t = { size : float; color : texture; index : int; score : int }
   let make size color index score = { size; color; index; score }
-  let ballArray =
+
+
+  let _ballArray =
     [|
       make 10. (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
       make 20. (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
@@ -110,6 +112,21 @@ module Balls = struct
       make 100. (Texture ("./resources/melon.png", 2. *. 100. /. 340.)) 9 256; (* melon *)
       make 110. (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
     |]
+
+    let ballArray =
+      [|
+        make 10. (Color "#ff0000") 0 0; (* cherry *)
+        make 20. (Color "#00c0ff") 1 1; (* strawberry *)
+        make 30. (Color "#a839cb") 2 2; (* grape *)
+        make 40. (Color "#f6a03c") 3 4; (* dekopon *)
+        make 50. (Color "#ff6300") 4 8; (* kaki *)
+        make 60. (Color "#3639ff") 5 16; (* apple *)
+        make 70. (Color "#e3bf45") 6 32; (* apple pear *)
+        make 80. (Color "#e47ec3") 7 64; (* peach *)
+        make 90. (Color "#28f4e5") 8 128; (* pineapple *)
+        make 100. (Color "#4fe13e") 9 256; (* melon *)
+        make 110. (Color "#0e8e00") 10 512; (* watermelon *)
+      |]
   let max = Array.length ballArray
   let nth = Array.unsafe_get ballArray
 end
@@ -154,7 +171,7 @@ let createBall ~preview (posX, posY) index =
     val isSleeping = preview
     val isSensor = preview
     val label = Label.to_string { index; insert=false }
-    val restitution = 0.8
+    val restitution = 1.0
     val render = render
   end in
   let ball = bodies##circle posX posY size option in
