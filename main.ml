@@ -5,18 +5,6 @@ open Matter
 
 let st = Random.State.make_self_init ()
 
-(* let docbody = Dom_html.document##.body *)
-(* let canvas =
-   let c = Dom_html.createCanvas Dom_html.document in
-   (* let c = Option.get @@ Dom_html.getElementById_coerce "canvas-area" Dom_html.CoerceTo.canvas in *)
-   c##.width := windowWidth;
-   c##.height := windowHeight;
-   Graphics_js.open_canvas c;
-   c##.id := Js.string "canvas-";
-   c##.style##.backgroundColor := Js.string "transparent";
-   Dom.appendChild Dom_html.document##.body c;
-   c *)
-
 let windowWidth = 800
 let windowHeight = 600
 
@@ -27,7 +15,7 @@ let iRunner = runner##create ()
 let iRender =
   render##create
     (object%js
-      val element = Dom_html.document##.body (* Dom_html.getElementById "canvas-" *)
+      val element = Dom_html.document##.body
       val engine = iEngine
       val options = object%js
         val width = windowWidth
@@ -38,17 +26,6 @@ let iRender =
     end)
 
 let canvas = iRender##.canvas
-
-(* let iMouse = mouse##create docbody
-   let iMouseConstraint =
-   mouseConstraint##create
-    iEngine
-      object%js
-        val mouse = iMouse
-      end
-
-   let () = iRender##.mouse := iMouse *)
-
 
 type scene = Title | Game
 let scene = ref Title
