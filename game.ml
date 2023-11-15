@@ -22,7 +22,7 @@ module MakeBasket
   include A
   let basketLeft = windowWidth*1/4
   let basketRight = windowWidth*3/4
-  let edgeWidth = windowWidth*1/40
+  let edgeWidth = windowWidth*1/20
   let capY = windowHeight*1/20
 end
 
@@ -45,7 +45,7 @@ let createBasket env =
       (windowWidth*1/2)
       (windowHeight*39/40)
       (basketRight - basketLeft + edgeWidth)
-      (windowHeight*1/20)
+      (windowHeight*1/15)
       option in
   let wallLeft =
     bodies##rectangle
