@@ -81,7 +81,7 @@ let createBasket env =
 type scene = Game | Over | WaitRetry
 
 type t =
-  { mutable nextBall : bodyClass Js.t option
+  { mutable nextBall : body Js.t option
   ; mutable ballGenerator : Dom_html.timeout_id_safe option
   ; mutable eventIds : Dom.event_listener_id list
   ; mutable mousePositionX : int
@@ -238,21 +238,22 @@ let addCollisionEvents t f_gameover =
        let pairs = Js.to_array e##.pairs in
        Array.iter
          (fun p ->
-            let optA = Label.of_string_opt p##.bodyA##.label in
-            let optB = Label.of_string_opt p##.bodyB##.label in
+            let a : body Js.t = p##.bodyA in
+            let b : body Js.t = p##.bodyB in
+            let optA = Label.of_string_opt a##.label in
+            let optB = Label.of_string_opt b##.label in
             match optA, optB with
             | Some { index ; _ }, Some { index = indexB; _ }
-              when index=indexB && index + 1 < Balls.max ->
+              when index = indexB && index + 1 < Balls.max ->
                 begin
                   let open Vector in
-                  let posA = p##.bodyA##.position in
-                  let posB = p##.bodyB##.position in
+                  let posA = a##.position in
+                  let posB = b##.position in
                   let posM = mult (add posA posB) 0.5 in
-                  let velA = p##.bodyA##.velocity in
-                  let velB = p##.bodyB##.velocity in
+                  let velA = a##.velocity in
+                  let velB = b##.velocity in
                   let velM = mult (add velA velB) 0.5 in
-                  composite##remove iEngine##.world p##.bodyA;
-                  composite##remove iEngine##.world p##.bodyB;
+                  composite##remove iEngine##.world [| a; b |];
                   let n = createBall ~preview:false (posM##.x, posM##.y) (index+1) in
                   body##setVelocity n velM;
                   composite##add iEngine##.world n;
@@ -269,10 +270,10 @@ let addCollisionEvents t f_gameover =
        let pairs = Js.to_array e##.pairs in
        Array.iter
          (fun p ->
+            let (a : body Js.t), (b : body Js.t) = p##.bodyA, p##.bodyB in
             let a, b =
-              if p##.bodyA##.label = capLabel
-              then p##.bodyB, p##.bodyA
-              else p##.bodyA, p##.bodyB in
+              if a##.label = capLabel
+              then b, a else a, b in
             if b##.label = capLabel then
               match Label.of_string_opt a##.label with
               | Some { insert=true; _ } -> f_gameover ()

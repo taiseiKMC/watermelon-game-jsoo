@@ -13,7 +13,7 @@ let events = Js.Unsafe.pure_js_expr "Matter.Events"
 let sleeping = Js.Unsafe.pure_js_expr "Matter.Sleeping"
 let vector = Js.Unsafe.pure_js_expr "Matter.Vector"
 
-class type vectorClass = object
+class type vector = object
   method x : float Js.prop
   method y : float Js.prop
 end
@@ -22,23 +22,23 @@ end
 module Vector = struct
   (* Should extract all arguments because of the specification of Js_of_ocaml.
      (Js cannot do partial appications) *)
-  let create : int -> int -> vectorClass Js.t =
+  let create : int -> int -> vector Js.t =
     fun x y -> vector##create x y
-  let create_float : float -> float -> vectorClass Js.t =
+  let create_float : float -> float -> vector Js.t =
     fun x y -> vector##create x y
 
-  let add : vectorClass Js.t -> vectorClass Js.t -> vectorClass Js.t =
+  let add : vector Js.t -> vector Js.t -> vector Js.t =
     fun p q ->
     vector##add p q
 
-  let mult : vectorClass Js.t -> float -> vectorClass Js.t =
+  let mult : vector Js.t -> float -> vector Js.t =
     fun p x ->
     vector##mult p x
 end
 
-class type bodyClass = object
-  method position : vectorClass Js.t Js.readonly_prop
-  method velocity : vectorClass Js.t Js.readonly_prop
+class type body = object
+  method position : vector Js.t Js.readonly_prop
+  method velocity : vector Js.t Js.readonly_prop
   method isSensor : bool Js.prop
   method label : string Js.prop
 end
