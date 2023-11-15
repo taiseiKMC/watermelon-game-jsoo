@@ -174,7 +174,7 @@ let adjustBallPosition env (x, y) size =
 (* Generate index at random (Exponential distribution) *)
 let nextIndex state =
   let nextIndex, _r =
-    let r = Random.State.int state (1 lsl Balls.max) in
+    let r = Random.State.int state ((1 lsl Balls.max) - 1) + 1 in
     let rec loop r n =
       if r > 0 then loop (r lsr 1) (n-1)
       else n
