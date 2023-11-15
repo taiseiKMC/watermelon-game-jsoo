@@ -91,22 +91,24 @@ type t =
   }
 
 module Balls = struct
+  type texture = Texture of string * float | Color of string
+
   (* Ball data *)
-  type t = { size : float; color : string; index : int; score : int }
+  type t = { size : float; color : texture; index : int; score : int }
   let make size color index score = { size; color; index; score }
   let ballArray =
     [|
-      make 10. "#ff0000" 0 0;
-      make 20. "#800080" 1 1;
-      make 30. "#0000ff" 2 2;
-      make 40. "#008080" 3 4;
-      make 50. "#80ff00" 4 8;
-      make 60. "#ff0000" 5 16;
-      make 70. "#800080" 6 32;
-      make 80. "#0000ff" 7 64;
-      make 90. "#008080" 8 128;
-      make 100. "#80ff00" 9 256;
-      make 110. "#000000" 9 512;
+      make 10. (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
+      make 20. (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
+      make 30. (Texture ("./resources/grape.png", 2. *. 30. /. 260.)) 2 2; (* grape *)
+      make 40. (Texture ("./resources/dekopon.png", 2. *. 40. /. 300.)) 3 4; (* dekopon *)
+      make 50. (Texture ("./resources/kaki.png", 2. *. 50. /. 350.)) 4 8; (* kaki *)
+      make 60. (Texture ("./resources/apple.png", 2. *. 60. /. 360.)) 5 16; (* apple *)
+      make 70. (Texture ("./resources/nashi.png", 2. *. 70. /. 340.)) 6 32; (* apple pear *)
+      make 80. (Texture ("./resources/peach.png", 2. *. 80. /. 310.)) 7 64; (* peach *)
+      make 90. (Texture ("./resources/pineapple.png", 2. *. 90. /. 180.)) 8 128; (* pineapple *)
+      make 100. (Texture ("./resources/melon.png", 2. *. 100. /. 340.)) 9 256; (* melon *)
+      make 110. (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
     |]
   let max = Array.length ballArray
   let nth = Array.unsafe_get ballArray
@@ -133,14 +135,27 @@ end
 
 let createBall ~preview (posX, posY) index =
   let { size; color; _ } : Balls.t = Balls.nth index in
+  let render = (* in でプロパティの存在判定をしているため optdef ではだめだった... *)
+    match color with
+    | Color col -> Js.Unsafe.coerce object%js val fillStyle = col end
+    | Texture (text, scale) ->
+        Js.Unsafe.coerce
+          object%js
+            val sprite =
+              object%js
+                val texture = text
+                val xScale = scale
+                val yScale = scale
+              end
+          end
+  in
+
   let option = object%js
     val isSleeping = preview
     val isSensor = preview
     val label = Label.to_string { index; insert=false }
     val restitution = 0.8
-    val render = object%js
-      val fillStyle = color
-    end
+    val render = render
   end in
   let ball = bodies##circle posX posY size option in
   let () =
