@@ -97,7 +97,6 @@ module Balls = struct
   type t = { size : float; color : texture; index : int; score : int }
   let make size color index score = { size; color; index; score }
 
-
   let _ballArray =
     [|
       make 10. (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
@@ -113,20 +112,20 @@ module Balls = struct
       make 110. (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
     |]
 
-    let ballArray =
-      [|
-        make 10. (Color "#ff0000") 0 0; (* cherry *)
-        make 20. (Color "#00c0ff") 1 1; (* strawberry *)
-        make 30. (Color "#a839cb") 2 2; (* grape *)
-        make 40. (Color "#f6a03c") 3 4; (* dekopon *)
-        make 50. (Color "#ff6300") 4 8; (* kaki *)
-        make 60. (Color "#3639ff") 5 16; (* apple *)
-        make 70. (Color "#e3bf45") 6 32; (* apple pear *)
-        make 80. (Color "#e47ec3") 7 64; (* peach *)
-        make 90. (Color "#28f4e5") 8 128; (* pineapple *)
-        make 100. (Color "#4fe13e") 9 256; (* melon *)
-        make 110. (Color "#0e8e00") 10 512; (* watermelon *)
-      |]
+  let ballArray =
+    [|
+      make 10. (Color "#ff0000") 0 0; (* cherry *)
+      make 20. (Color "#00c0ff") 1 1; (* strawberry *)
+      make 30. (Color "#a839cb") 2 2; (* grape *)
+      make 40. (Color "#f6a03c") 3 4; (* dekopon *)
+      make 50. (Color "#ff6300") 4 8; (* kaki *)
+      make 60. (Color "#3639ff") 5 16; (* apple *)
+      make 70. (Color "#e3bf45") 6 32; (* apple pear *)
+      make 80. (Color "#e47ec3") 7 64; (* peach *)
+      make 90. (Color "#28f4e5") 8 128; (* pineapple *)
+      make 100. (Color "#4fe13e") 9 256; (* melon *)
+      make 110. (Color "#0e8e00") 10 512; (* watermelon *)
+    |]
   let max = Array.length ballArray
   let nth = Array.unsafe_get ballArray
 end
@@ -171,7 +170,7 @@ let createBall ~preview (posX, posY) index =
     val isSleeping = preview
     val isSensor = preview
     val label = Label.to_string { index; insert=false }
-    val restitution = 1.0
+    val restitution = 0.9
     val render = render
   end in
   let ball = bodies##circle posX posY size option in
@@ -314,6 +313,38 @@ let addCollisionEvents t f_gameover =
          pairs);
   ()
 
+let addHierarchy t =
+  let { basket=(module Basket); iEngine; _ } = t.env in
+  let createBall (posX, posY) size index =
+    let { color; _ } : Balls.t = Balls.nth index in
+    let render =
+      match color with
+      | Color col -> Js.Unsafe.coerce object%js val fillStyle = col end
+      | Texture (text, scale) ->
+          Js.Unsafe.coerce
+            object%js
+              val sprite =
+                object%js
+                  val texture = text
+                  val xScale = scale
+                  val yScale = scale
+                end
+            end
+    in
+    let option = object%js
+      val isSensor = true
+      val isStatic = true
+      val render = render
+    end in
+    bodies##circle posX posY size option in
+  let rec f i =
+    if i < Balls.max then
+      let ball = createBall (Basket.windowWidth*7/8, Basket.windowHeight*3/10 + i * 40) 15 i in
+      let () = composite##add iEngine##.world ball in
+      f (i+1)
+    else () in
+  f 0
+
 (* End the game, stop moving balls, delete events, and transit to the next scene *)
 let endGame t =
   let { iEngine; iRunner; _ } = t.env in
@@ -355,6 +386,7 @@ let rec startGame t =
   t.eventIds <- ids;
   let basket = createBasket t.env in
   composite##add iEngine##.world basket;
+  addHierarchy t;
   addCollisionEvents t (fun () -> endGame t);
   let _ =
     Dom_html.(
@@ -390,9 +422,17 @@ let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
   ctxt##.fillStyle := Js.string "#000000";
   ctxt##.textAlign := Js.string "center";
   ctxt##fillText
-    (Js.string (Format.sprintf "Score: %d" (t.score)))
+    (Js.string (Format.sprintf "Score"))
     (float_of_int windowWidth /. 8.)
-    (float_of_int windowHeight /. 2.);
+    (float_of_int windowHeight *. 1./. 5.);
+  ctxt##fillText
+    (Js.string (Format.sprintf "%d" (t.score)))
+    (float_of_int windowWidth /. 8.)
+    (float_of_int windowHeight *. 1./. 5. +. 30.);
+  ctxt##fillText
+  (Js.string (Format.sprintf "Hierarchy"))
+  (float_of_int windowWidth *. 7. /. 8.)
+  (float_of_int windowHeight *. 1. /. 5.);
   match t.scene with
   | Game -> ()
   | Over ->
