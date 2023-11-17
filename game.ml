@@ -30,8 +30,8 @@ end
 type environment =
   { canvas : Dom_html.eventTarget Js.t
   ; basket : (module Basket)
-  ; iEngine : < world : < > Js.prop > Js.t
-  ; iRunner : < enabled : bool Js.prop > Js.t
+  ; engine : engine Js.t
+  ; runner : runner Js.t
   ; state : Random.State.t }
 
 
@@ -41,28 +41,28 @@ let createBasket env =
   let open Basket in
   let option = object%js val isStatic=true end in
   let ground =
-    bodies##rectangle
+    _Bodies##rectangle
       (windowWidth*1/2)
       (windowHeight*39/40)
       (basketRight - basketLeft + edgeWidth)
       (windowHeight*1/15)
       option in
   let wallLeft =
-    bodies##rectangle
+    _Bodies##rectangle
       basketLeft
       (windowHeight*1/2)
       edgeWidth
       (windowHeight*9/10)
       option in
   let wallRight =
-    bodies##rectangle
+    _Bodies##rectangle
       basketRight
       (windowHeight*1/2)
       edgeWidth
       (windowHeight*9/10)
       option in
   let cap =
-    bodies##rectangle
+    _Bodies##rectangle
       (windowWidth*1/2)
       (windowHeight*1/40)
       windowWidth
@@ -173,7 +173,7 @@ let createBall ~preview (posX, posY) index =
     val restitution = 0.9
     val render = render
   end in
-  let ball = bodies##circle posX posY size option in
+  let ball = _Bodies##circle posX posY size option in
   let () =
     if preview then ()
     else ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true}) 1000. in
@@ -200,13 +200,13 @@ let nextIndex state =
 
 (* Put in a new ball to the basket *)
 let generateBall t =
-  let { iEngine; state; basket=(module Basket); _ } = t.env in
+  let { engine; state; basket=(module Basket); _ } = t.env in
   let pos_x = t.mousePositionX in
   let index = nextIndex state in
   let { size; _ } : Balls.t = Balls.nth index in
   let pos = adjustBallPosition t.env (float_of_int pos_x, float_of_int Basket.capY) size in
   let n = createBall ~preview:true pos index in
-  composite##add iEngine##.world n;
+  _Composite##add engine##.world n;
   t.ballGenerator <- None;
   t.nextBall <- Some n
 
@@ -231,7 +231,7 @@ let createMouseEvents t next_f =
                     let { index; _ } : Label.t = Label.of_string n##.label in
                     Balls.nth index in
                   let (x, y) = adjustBallPosition t.env (float_of_int x, y) size in
-                  body##setPosition n (Vector.create_float x y)));
+                  _Body##setPosition n (Vector.create_float x y)));
             Js._false))
       Js._false in
   let id1 =
@@ -243,8 +243,8 @@ let createMouseEvents t next_f =
             (* Throw in the ball *)
             (match t.nextBall with
              | Some n ->
-                 sleeping##set n false;
-                 body##setSpeed n 0;
+                 _Sleeping##set n false;
+                 _Body##setSpeed n 0;
                  n##.isSensor := false;
                  let _ =
                    Dom_html.setTimeout
@@ -260,9 +260,9 @@ let createMouseEvents t next_f =
   [id0; id1]
 
 let addCollisionEvents t f_gameover =
-  let { iEngine; _ } = t.env in
-  events##on
-    iEngine
+  let { engine; _ } = t.env in
+  _Events##on
+    engine
     "collisionStart"
     (fun e ->
        (* Merge balls if the same ones are contacted *)
@@ -284,17 +284,17 @@ let addCollisionEvents t f_gameover =
                   let velA = a##.velocity in
                   let velB = b##.velocity in
                   let velM = mult (add velA velB) 0.5 in
-                  composite##remove iEngine##.world [| a; b |];
+                  _Composite##remove engine##.world [| a; b |];
                   let n = createBall ~preview:false (posM##.x, posM##.y) (index+1) in
-                  body##setVelocity n velM;
-                  composite##add iEngine##.world n;
+                  _Body##setVelocity n velM;
+                  _Composite##add engine##.world n;
                   let { score=s; _ } : Balls.t = Balls.nth (index+1) in
                   t.score<-t.score + s
                 end
             | _ -> ())
          pairs);
-  events##on
-    iEngine
+  _Events##on
+    engine
     "collisionActive"
     (fun e ->
        (* Check balls are overflowing *)
@@ -314,7 +314,7 @@ let addCollisionEvents t f_gameover =
   ()
 
 let addHierarchy t =
-  let { basket=(module Basket); iEngine; _ } = t.env in
+  let { basket=(module Basket); engine; _ } = t.env in
   let createBall (posX, posY) size index =
     let { color; _ } : Balls.t = Balls.nth index in
     let render =
@@ -336,18 +336,18 @@ let addHierarchy t =
       val isStatic = true
       val render = render
     end in
-    bodies##circle posX posY size option in
+    _Bodies##circle posX posY size option in
   let rec f i =
     if i < Balls.max then
       let ball = createBall (Basket.windowWidth*7/8, Basket.windowHeight*3/10 + i * 40) 15 i in
-      let () = composite##add iEngine##.world ball in
+      let () = _Composite##add engine##.world ball in
       f (i+1)
     else () in
   f 0
 
 (* End the game, stop moving balls, delete events, and transit to the next scene *)
 let endGame t =
-  let { iEngine; iRunner; _ } = t.env in
+  let { engine; runner; _ } = t.env in
   t.scene <- Over;
   t.nextBall <- None;
   let () =
@@ -358,8 +358,8 @@ let endGame t =
     | None -> () in
   List.iter Dom_html.removeEventListener t.eventIds;
   t.eventIds <- [];
-  events##off iEngine;
-  iRunner##.enabled := false;
+  _Events##off engine;
+  runner##.enabled := Js._false;
   let _ = (* Wait 2 seconds and transit scene *)
     Dom_html.setTimeout
       (fun () -> t.scene<-WaitRetry)
@@ -367,13 +367,13 @@ let endGame t =
   ()
 
 let reset t =
-  let { iEngine; iRunner; _ } = t.env in
-  resetEngine iEngine;
-  iRunner##.enabled := true;
+  let { engine; runner; _ } = t.env in
+  resetEngine engine;
+  runner##.enabled := Js._true;
   t.score<-0
 
 let rec startGame t =
-  let { iEngine; _ } = t.env in
+  let { engine; _ } = t.env in
   generateBall t;
   let ids =
     createMouseEvents t
@@ -385,7 +385,7 @@ let rec startGame t =
          t.ballGenerator <- Some id) in
   t.eventIds <- ids;
   let basket = createBasket t.env in
-  composite##add iEngine##.world basket;
+  _Composite##add engine##.world basket;
   addHierarchy t;
   addCollisionEvents t (fun () -> endGame t);
   let _ =
@@ -409,9 +409,9 @@ and restartGame t =
   reset t;
   startGame t
 
-let make ~iEngine ~iRunner ~canvas ~windowWidth ~windowHeight ~state () =
+let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
   let module Basket = MakeBasket(struct let windowWidth=windowWidth let windowHeight=windowHeight end) in
-  let env = { iEngine; iRunner; canvas; basket=(module Basket); state } in
+  let env = { engine; runner; canvas; basket=(module Basket); state } in
   let mousePositionX = windowWidth/2 in
   { nextBall=None; ballGenerator=None; eventIds=[]; score=0; mousePositionX; scene=Game; env }
 

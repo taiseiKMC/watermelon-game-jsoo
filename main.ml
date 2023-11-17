@@ -8,15 +8,15 @@ let st = Random.State.make_self_init ()
 let windowWidth = 800
 let windowHeight = 600
 
-let iEngine = engine##create ()
+let engine = _Engine##create ()
 
-let iRunner = runner##create ()
+let runner = _Runner##create ()
 
-let iRender =
-  render##create
+let render =
+  _Render##create
     (object%js
       val element = Dom_html.document##.body
-      val engine = iEngine
+      val engine = engine
       val options = object%js
         val width = windowWidth
         val height = windowHeight
@@ -25,17 +25,17 @@ let iRender =
       end
     end)
 
-let canvas = iRender##.canvas
+let canvas = render##.canvas
 
 type scene = Title | Game
 let scene = ref Title
 
-let game = Game.make ~iEngine ~iRunner ~canvas ~state:st ~windowWidth ~windowHeight ()
+let game = Game.make ~engine ~runner ~canvas ~state:st ~windowWidth ~windowHeight ()
 
 let draw () =
-  resetEngine iEngine;
-  events##on
-    iRender
+  resetEngine engine;
+  _Events##on
+    render
     "afterRender"
     (fun _e -> (* Expect to call this every frame *)
        let ctxt : Dom_html.canvasRenderingContext2D Js.t =
@@ -56,8 +56,8 @@ let draw () =
               (float_of_int windowHeight /. 2. +. 40.)))
 
 let () =
-  render##run iRender;
-  runner##run iRunner iEngine;
+  _Render##run render;
+  _Runner##run runner engine;
   let _ = (* Event to start the game by a click *)
     Dom_html.(
       addEventListener
