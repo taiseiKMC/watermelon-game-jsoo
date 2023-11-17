@@ -84,7 +84,7 @@ type t =
   { mutable nextBall : body Js.t option
   ; mutable ballGenerator : Dom_html.timeout_id_safe option
   ; mutable eventIds : Dom.event_listener_id list
-  ; mutable mousePositionX : int
+  ; mutable mousePositionX : float
   ; mutable scene : scene
   ; mutable score : int
   ; env : environment
@@ -204,7 +204,7 @@ let generateBall t =
   let pos_x = t.mousePositionX in
   let index = nextIndex state in
   let { size; _ } : Balls.t = Balls.nth index in
-  let pos = adjustBallPosition t.env (float_of_int pos_x, float_of_int Basket.capY) size in
+  let pos = adjustBallPosition t.env (pos_x, float_of_int Basket.capY) size in
   let n = createBall ~preview:true pos index in
   _Composite##add engine##.world n;
   t.ballGenerator <- None;
@@ -221,17 +221,21 @@ let createMouseEvents t next_f =
       (handler
          (fun e ->
             (* Move the ball position horizontally following the mouse position *)
-            (match t.nextBall with
-             | None -> ()
-             | Some n ->
-                 (t.mousePositionX <- e##.clientX;
+            (match t.nextBall, Js.Opt.to_option e##.target with
+             | Some n, Some tar ->
+                 ((* The way to get relative mouse position :
+                    https://cpplover.blogspot.com/2009/06/dom-level-3.html *)
+                  let rect = tar##getBoundingClientRect in
+                  t.mousePositionX <- float_of_int e##.clientX -. rect##.left;
                   let x = t.mousePositionX in
                   let y = n##.position##.y in
                   let { size; _ } : Balls.t =
                     let { index; _ } : Label.t = Label.of_string n##.label in
                     Balls.nth index in
-                  let (x, y) = adjustBallPosition t.env (float_of_int x, y) size in
-                  _Body##setPosition n (Vector.create_float x y)));
+                  let (x, y) = adjustBallPosition t.env (x, y) size in
+                  _Body##setPosition n (Vector.create_float x y))
+                  
+             | _ -> ());
             Js._false))
       Js._false in
   let id1 =
@@ -412,7 +416,7 @@ and restartGame t =
 let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
   let module Basket = MakeBasket(struct let windowWidth=windowWidth let windowHeight=windowHeight end) in
   let env = { engine; runner; canvas; basket=(module Basket); state } in
-  let mousePositionX = windowWidth/2 in
+  let mousePositionX = float_of_int @@ windowWidth/2 in
   { nextBall=None; ballGenerator=None; eventIds=[]; score=0; mousePositionX; scene=Game; env }
 
 let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
