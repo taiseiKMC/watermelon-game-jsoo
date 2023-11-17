@@ -12,10 +12,14 @@ let engine = _Engine##create ()
 
 let runner = _Runner##create ()
 
-let render =
+let element = (* Dom_html.document##.body *)
+  let c = Dom_html.getElementById "canvas-area" in
+  c
+
+  let render =
   _Render##create
     (object%js
-      val element = Dom_html.document##.body
+      val element = element
       val engine = engine
       val options = object%js
         val width = windowWidth
