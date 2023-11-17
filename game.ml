@@ -64,7 +64,7 @@ let createBasket env =
   let cap =
     _Bodies##rectangle
       (windowWidth*1/2)
-      (windowHeight*1/40)
+      (windowHeight*1/80)
       windowWidth
       (windowHeight*1/20)
       object%js
