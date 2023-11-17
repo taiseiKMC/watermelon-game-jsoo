@@ -1,5 +1,17 @@
 open Js_of_ocaml
 
+class type vector = object
+  method x : float Js.prop
+  method y : float Js.prop
+end
+
+class type vectorModule = object
+  method create_int : int -> int -> vector Js.t Js.meth
+  method create_float : float -> float -> vector Js.t Js.meth
+  method add : vector Js.t -> vector Js.t -> vector Js.t Js.meth
+  method mult : vector Js.t -> float -> vector Js.t Js.meth
+end
+
 (* Bind Js modules *)
 let engine = Js.Unsafe.pure_js_expr "Matter.Engine"
 let render = Js.Unsafe.pure_js_expr "Matter.Render"
@@ -11,21 +23,17 @@ let mouse = Js.Unsafe.pure_js_expr "Matter.Mouse"
 let mouseConstraint = Js.Unsafe.pure_js_expr "Matter.MouseConstraint"
 let events = Js.Unsafe.pure_js_expr "Matter.Events"
 let sleeping = Js.Unsafe.pure_js_expr "Matter.Sleeping"
-let vector = Js.Unsafe.pure_js_expr "Matter.Vector"
+let vector : vectorModule Js.t = Js.Unsafe.pure_js_expr "Matter.Vector"
 
-class type vector = object
-  method x : float Js.prop
-  method y : float Js.prop
-end
 
 (** Wrapper of vector module in JS *)
 module Vector = struct
   (* Should extract all arguments because of the specification of Js_of_ocaml.
      (Js cannot do partial appications) *)
-  let create : int -> int -> vector Js.t =
-    fun x y -> vector##create x y
+  let create_int : int -> int -> vector Js.t =
+    fun x y -> vector##create_int x y
   let create_float : float -> float -> vector Js.t =
-    fun x y -> vector##create x y
+    fun x y -> vector##create_float x y
 
   let add : vector Js.t -> vector Js.t -> vector Js.t =
     fun p q ->
@@ -40,6 +48,8 @@ class type body = object
   method position : vector Js.t Js.readonly_prop
   method velocity : vector Js.t Js.readonly_prop
   method isSensor : bool Js.prop
+  method isSleeping : bool Js.readonly_prop
+  method isStatic : bool Js.readonly_prop
   method label : string Js.prop
 end
 
