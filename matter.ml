@@ -12,13 +12,31 @@ class type vectorModule = object
   method mult : vector Js.t -> float -> vector Js.t Js.meth
 end
 
+class type body = object
+  method position : vector Js.t Js.readonly_prop
+  method velocity : vector Js.t Js.readonly_prop
+  method isSensor : bool Js.prop
+  method isSleeping : bool Js.readonly_prop
+  method isStatic : bool Js.readonly_prop
+  method label : string Js.prop
+end
+
+type composite
+
+class type compositeModule = object
+  method add : composite Js.t -> body Js.t Js.js_array Js.t -> unit Js.meth
+  method remove : composite Js.t -> body Js.t Js.js_array Js.t -> unit Js.meth
+  method clear : composite Js.t -> unit Js.meth
+end
+
 class type engine = object
-  method world : < > Js.prop (** Root composite instance *)
+  method world : composite Js.t Js.prop (** Root composite instance *)
 end
 
 class type runner = object
   method enabled : bool Js.t Js.prop
 end
+
 
 (* Bind Js modules *)
 let _Engine = Js.Unsafe.pure_js_expr "Matter.Engine"
@@ -26,7 +44,7 @@ let _Render = Js.Unsafe.pure_js_expr "Matter.Render"
 let _Runner = Js.Unsafe.pure_js_expr "Matter.Runner"
 let _Bodies = Js.Unsafe.pure_js_expr "Matter.Bodies"
 let _Body = Js.Unsafe.pure_js_expr "Matter.Body"
-let _Composite = Js.Unsafe.pure_js_expr "Matter.Composite"
+let _Composite : compositeModule Js.t = Js.Unsafe.pure_js_expr "Matter.Composite"
 let _Mouse = Js.Unsafe.pure_js_expr "Matter.Mouse"
 let _MouseConstraint = Js.Unsafe.pure_js_expr "Matter.MouseConstraint"
 let _Events = Js.Unsafe.pure_js_expr "Matter.Events"
@@ -52,23 +70,15 @@ module Vector = struct
     _Vector##mult p x
 end
 
-class type body = object
-  method position : vector Js.t Js.readonly_prop
-  method velocity : vector Js.t Js.readonly_prop
-  method isSensor : bool Js.prop
-  method isSleeping : bool Js.readonly_prop
-  method isStatic : bool Js.readonly_prop
-  method label : string Js.prop
-end
-
 let resetEngine (engine : engine Js.t) =
   let () = _Composite##clear engine##.world in
   (* Trick to cause the event "afterRender" everytime *)
   _Composite##add
     engine##.world
-    [| _Bodies##rectangle
-         0 0 0 0
-         object%js
-           val isStatic = true
-           val isSensor = true
-         end |]
+    (Js.array
+       [| _Bodies##rectangle
+            0 0 0 0
+            object%js
+              val isStatic = true
+              val isSensor = true
+            end |])

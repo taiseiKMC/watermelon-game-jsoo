@@ -284,7 +284,7 @@ let addCollisionEvents t f_gameover =
                   let velA = a##.velocity in
                   let velB = b##.velocity in
                   let velM = mult (add velA velB) 0.5 in
-                  _Composite##remove engine##.world [| a; b |];
+                  _Composite##remove engine##.world (Js.array [| a; b |]);
                   let n = createBall ~preview:false (posM##.x, posM##.y) (index+1) in
                   _Body##setVelocity n velM;
                   _Composite##add engine##.world n;
@@ -385,7 +385,7 @@ let rec startGame t =
          t.ballGenerator <- Some id) in
   t.eventIds <- ids;
   let basket = createBasket t.env in
-  _Composite##add engine##.world basket;
+  _Composite##add engine##.world (Js.array basket);
   addHierarchy t;
   addCollisionEvents t (fun () -> endGame t);
   let _ =
@@ -430,9 +430,9 @@ let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
     (float_of_int windowWidth /. 8.)
     (float_of_int windowHeight *. 1./. 5. +. 30.);
   ctxt##fillText
-  (Js.string (Format.sprintf "Hierarchy"))
-  (float_of_int windowWidth *. 7. /. 8.)
-  (float_of_int windowHeight *. 1. /. 5.);
+    (Js.string (Format.sprintf "Hierarchy"))
+    (float_of_int windowWidth *. 7. /. 8.)
+    (float_of_int windowHeight *. 1. /. 5.);
   match t.scene with
   | Game -> ()
   | Over ->
