@@ -15,7 +15,7 @@ let runner = _Runner##create ()
 let element = (* Dom_html.document##.body *)
   Dom_html.getElementById "canvas-area"
 
-  let render =
+let render =
   _Render##create
     (object%js
       val element = element
@@ -46,17 +46,23 @@ let draw () =
        match !scene with
        | Game -> Game.draw game ctxt
        | Title ->
-           (ctxt##.font := Js.string "50px serif";
-            ctxt##.fillStyle := Js.string "#000000";
+           (ctxt##.font := Js.string (Format.sprintf "bold %dpx serif" (windowHeight / 10));
+            ctxt##.fillStyle := Js.string "#00e020";
             ctxt##.textAlign := Js.string "center";
             ctxt##fillText
               (Js.string "スイカゲームもどき")
               (float_of_int windowWidth /. 2.)
-              (float_of_int windowHeight /. 2.);
+              (float_of_int windowHeight *. 2. /. 5.);
+            ctxt##strokeText
+              (Js.string "スイカゲームもどき")
+              (float_of_int windowWidth /. 2.)
+              (float_of_int windowHeight *. 2. /. 5.);
+            ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight / 20));
+            ctxt##.fillStyle := Js.string "#000000";
             ctxt##fillText
               (Js.string "Click to start")
               (float_of_int windowWidth /. 2.)
-              (float_of_int windowHeight /. 2. +. 40.)))
+              (float_of_int windowHeight *. 11. /. 20.)))
 
 let () =
   _Render##run render;

@@ -11,6 +11,16 @@ module type Basket = sig
   val basketRight : int
   val edgeWidth : int
   val capY : int
+  val scoreLetterX : int
+  val scoreLetterY : int
+  val scoreX : int
+  val scoreY : int
+  val hierarchyLetterX : int
+  val hierarchyLetterY : int
+  val gameOverLetterX : int
+  val gameOverLetterY : int
+  val retryLetterX : int
+  val retryLetterY : int
 end
 
 (* Generate position data from window size *)
@@ -20,10 +30,21 @@ module MakeBasket
        val windowHeight : int
      end) : Basket = struct
   include A
-  let basketLeft = windowWidth*1/4
-  let basketRight = windowWidth*3/4
-  let edgeWidth = windowWidth*1/20
-  let capY = windowHeight*1/20
+  let basketLeft = windowWidth * 1 / 4
+  let basketRight = windowWidth * 3 / 4
+  let edgeWidth = windowWidth * 1 / 20
+  let capY = windowHeight * 1 / 20
+
+  let scoreLetterX = windowWidth / 8
+  let scoreLetterY = windowHeight * 4 / 20
+  let scoreX = scoreLetterX
+  let scoreY = scoreLetterY + windowHeight * 1 / 20
+  let hierarchyLetterX = windowWidth * 7 / 8
+  let hierarchyLetterY = windowHeight * 1 / 5
+  let gameOverLetterX = windowWidth / 2
+  let gameOverLetterY = windowHeight * 8 / 20
+  let retryLetterX = gameOverLetterX
+  let retryLetterY = gameOverLetterY + windowHeight * 3 / 20
 end
 
 
@@ -42,31 +63,31 @@ let createBasket env =
   let option = object%js val isStatic=true end in
   let ground =
     _Bodies##rectangle
-      (windowWidth*1/2)
-      (windowHeight*39/40)
+      (windowWidth * 1 / 2)
+      (windowHeight * 39 / 40)
       (basketRight - basketLeft + edgeWidth)
-      (windowHeight*1/15)
+      (windowHeight * 1 / 15)
       option in
   let wallLeft =
     _Bodies##rectangle
       basketLeft
-      (windowHeight*1/2)
+      (windowHeight * 1 / 2)
       edgeWidth
-      (windowHeight*9/10)
+      (windowHeight * 9 / 10)
       option in
   let wallRight =
     _Bodies##rectangle
       basketRight
-      (windowHeight*1/2)
+      (windowHeight * 1 / 2)
       edgeWidth
-      (windowHeight*9/10)
+      (windowHeight * 9 / 10)
       option in
   let cap =
     _Bodies##rectangle
-      (windowWidth*1/2)
-      (windowHeight*1/80)
+      (windowWidth * 1 / 2)
+      (windowHeight * 1 / 80)
       windowWidth
-      (windowHeight*1/20)
+      (windowHeight * 1 / 20)
       object%js
         val label = capLabel
         val isStatic = true
@@ -431,34 +452,37 @@ let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
 let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
   let { basket=(module Basket); _ } = t.env in
   let open Basket in
-  ctxt##.font := Js.string "24px serif";
+  ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/20));
   ctxt##.fillStyle := Js.string "#000000";
   ctxt##.textAlign := Js.string "center";
   ctxt##fillText
     (Js.string (Format.sprintf "Score"))
-    (float_of_int windowWidth /. 8.)
-    (float_of_int windowHeight *. 1./. 5.);
+    (float_of_int scoreLetterX)
+    (float_of_int scoreLetterY);
   ctxt##fillText
     (Js.string (Format.sprintf "%d" (t.score)))
-    (float_of_int windowWidth /. 8.)
-    (float_of_int windowHeight *. 1./. 5. +. 30.);
+    (float_of_int scoreX)
+    (float_of_int scoreY);
   ctxt##fillText
     (Js.string (Format.sprintf "Hierarchy"))
-    (float_of_int windowWidth *. 7. /. 8.)
-    (float_of_int windowHeight *. 1. /. 5.);
+    (float_of_int hierarchyLetterX)
+    (float_of_int hierarchyLetterY);
   match t.scene with
   | Game -> ()
   | Over ->
-      (ctxt##fillText
-         (Js.string "GameOver")
-         (float_of_int windowWidth /. 2.)
-         (float_of_int windowHeight /. 2.))
+      ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
+        ctxt##fillText
+          (Js.string "GameOver")
+          (float_of_int gameOverLetterX)
+          (float_of_int gameOverLetterY))
   | WaitRetry ->
-      (ctxt##fillText
-         (Js.string "GameOver")
-         (float_of_int windowWidth /. 2.)
-         (float_of_int windowHeight /. 2.);
-       ctxt##fillText
-         (Js.string "Click to retry")
-         (float_of_int windowWidth /. 2.)
-         (float_of_int windowHeight /. 2. +. 40.))
+      ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
+        ctxt##fillText
+          (Js.string "GameOver")
+          (float_of_int gameOverLetterX)
+          (float_of_int gameOverLetterY);
+        ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/20));
+        ctxt##fillText
+          (Js.string "Click to retry")
+          (float_of_int retryLetterX)
+          (float_of_int retryLetterY))
