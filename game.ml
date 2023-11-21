@@ -117,36 +117,38 @@ module Balls = struct
   (* Ball data *)
   type t = { size : float; color : texture; index : int; score : int }
 
-  let make size color index score = { size; color; index; score }
+  let make color index score =
+    let size = float_of_int @@ index * 8 + 12 in
+    { size; color; index; score }
 
   let _ballArray = (* (discarded) texture *)
     [|
-      make 10. (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
-      make 20. (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
-      make 30. (Texture ("./resources/grape.png", 2. *. 30. /. 260.)) 2 2; (* grape *)
-      make 40. (Texture ("./resources/dekopon.png", 2. *. 40. /. 300.)) 3 4; (* dekopon *)
-      make 50. (Texture ("./resources/kaki.png", 2. *. 50. /. 350.)) 4 8; (* kaki *)
-      make 60. (Texture ("./resources/apple.png", 2. *. 60. /. 360.)) 5 16; (* apple *)
-      make 70. (Texture ("./resources/nashi.png", 2. *. 70. /. 340.)) 6 32; (* apple pear *)
-      make 80. (Texture ("./resources/peach.png", 2. *. 80. /. 310.)) 7 64; (* peach *)
-      make 90. (Texture ("./resources/pineapple.png", 2. *. 90. /. 180.)) 8 128; (* pineapple *)
-      make 100. (Texture ("./resources/melon.png", 2. *. 100. /. 340.)) 9 256; (* melon *)
-      make 110. (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
+      make (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
+      make (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
+      make (Texture ("./resources/grape.png", 2. *. 30. /. 260.)) 2 2; (* grape *)
+      make (Texture ("./resources/dekopon.png", 2. *. 40. /. 300.)) 3 4; (* dekopon *)
+      make (Texture ("./resources/kaki.png", 2. *. 50. /. 350.)) 4 8; (* kaki *)
+      make (Texture ("./resources/apple.png", 2. *. 60. /. 360.)) 5 16; (* apple *)
+      make (Texture ("./resources/nashi.png", 2. *. 70. /. 340.)) 6 32; (* apple pear *)
+      make (Texture ("./resources/peach.png", 2. *. 80. /. 310.)) 7 64; (* peach *)
+      make (Texture ("./resources/pineapple.png", 2. *. 90. /. 180.)) 8 128; (* pineapple *)
+      make (Texture ("./resources/melon.png", 2. *. 100. /. 340.)) 9 256; (* melon *)
+      make (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
     |]
 
   let ballArray =
     [|
-      make 10. (Color "#ff0000") 0 0; (* cherry *)
-      make 20. (Color "#00c0ff") 1 1; (* strawberry *)
-      make 30. (Color "#a839cb") 2 2; (* grape *)
-      make 40. (Color "#f6a03c") 3 4; (* dekopon *)
-      make 50. (Color "#ff6300") 4 8; (* kaki *)
-      make 60. (Color "#3639ff") 5 16; (* apple *)
-      make 70. (Color "#e3bf45") 6 32; (* apple pear *)
-      make 80. (Color "#e47ec3") 7 64; (* peach *)
-      make 90. (Color "#28f4e5") 8 128; (* pineapple *)
-      make 100. (Color "#4fe13e") 9 256; (* melon *)
-      make 110. (Color "#0e8e00") 10 512; (* watermelon *)
+      make (Color "#ff0000") 0 0; (* cherry *)
+      make (Color "#00c0ff") 1 1; (* strawberry *)
+      make (Color "#a839cb") 2 2; (* grape *)
+      make (Color "#f6a03c") 3 4; (* dekopon *)
+      make (Color "#ff6300") 4 8; (* kaki *)
+      make (Color "#3639ff") 5 16; (* apple *)
+      make (Color "#e3bf45") 6 32; (* apple pear *)
+      make (Color "#e47ec3") 7 64; (* peach *)
+      make (Color "#28f4e5") 8 128; (* pineapple *)
+      make (Color "#4fe13e") 9 256; (* melon *)
+      make (Color "#0e8e00") 10 512; (* watermelon *)
     |]
   let max = Array.length ballArray
   let nth = Array.unsafe_get ballArray
@@ -216,8 +218,8 @@ let adjustBallPosition env (x, y) size =
   let y = min y (float_of_int capY -. size) in
   (x, y)
 
-(* Generate index at random (Exponential distribution) *)
-let nextIndex state =
+(* Exponential distribution *)
+let _nextIndex0 state =
   let nextIndex, _r =
     let r = Random.State.int state ((1 lsl Balls.max) - 1) + 1 in
     let rec loop r n =
@@ -226,6 +228,13 @@ let nextIndex state =
     in
     loop r Balls.max, r in
   nextIndex
+
+(* Uniform distribution [0, 4] *)
+let _nextIndex1 state =
+  Random.State.int state 5
+
+(* Generate index at random *)
+let nextIndex = _nextIndex1
 
 (* Put in a new ball to the basket *)
 let generateBall t =
