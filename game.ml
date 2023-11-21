@@ -118,7 +118,7 @@ module Balls = struct
   type t = { size : float; color : texture; index : int; score : int }
 
   let make color index score =
-    let size = float_of_int @@ index * 8 + 12 in
+    let size = float_of_int @@ index * 10 + 10 in
     { size; color; index; score }
 
   let _ballArray = (* (discarded) texture *)
