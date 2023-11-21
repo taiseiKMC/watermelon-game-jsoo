@@ -21,7 +21,7 @@ class type body = object
   method label : string Js.prop
 end
 
-type composite
+type composite (* phantom type *)
 
 class type compositeModule = object
   method add : composite Js.t -> body Js.t Js.js_array Js.t -> unit Js.meth
@@ -39,20 +39,21 @@ end
 
 
 (* Bind Js modules *)
-let _Engine = Js.Unsafe.pure_js_expr "Matter.Engine"
-let _Render = Js.Unsafe.pure_js_expr "Matter.Render"
-let _Runner = Js.Unsafe.pure_js_expr "Matter.Runner"
-let _Bodies = Js.Unsafe.pure_js_expr "Matter.Bodies"
-let _Body = Js.Unsafe.pure_js_expr "Matter.Body"
-let _Composite : compositeModule Js.t = Js.Unsafe.pure_js_expr "Matter.Composite"
-let _Mouse = Js.Unsafe.pure_js_expr "Matter.Mouse"
-let _MouseConstraint = Js.Unsafe.pure_js_expr "Matter.MouseConstraint"
-let _Events = Js.Unsafe.pure_js_expr "Matter.Events"
-let _Sleeping = Js.Unsafe.pure_js_expr "Matter.Sleeping"
-let _Vector : vectorModule Js.t = Js.Unsafe.pure_js_expr "Matter.Vector"
+let _Matter = Js.Unsafe.pure_js_expr "Matter"
+let _Engine = _Matter##.Engine
+let _Render = _Matter##.Render
+let _Runner = _Matter##.Runner
+let _Bodies = _Matter##.Bodies
+let _Body = _Matter##.Body
+let _Composite : compositeModule Js.t = _Matter##.Composite
+let _Mouse = _Matter##.Mouse
+let _MouseConstraint = _Matter##.MouseConstraint
+let _Events = _Matter##.Events
+let _Sleeping = _Matter##.Sleeping
+let _Vector : vectorModule Js.t = _Matter##.Vector
 
 
-(** Wrapper of vector module in JS *)
+(** A wrapper of vector module in matter-js *)
 module Vector = struct
   (* Should extract all arguments because of the specification of Js_of_ocaml.
      (Js cannot do partial appications) *)
