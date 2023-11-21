@@ -157,18 +157,28 @@ end
 (** [label] is a kind of id used by 'body's in matter-js.
     [Label] provides the conversion between [Label.t] and [label] *)
 module Label = struct
-  type t = { index : int ; insert : bool }
+  type t =
+    { index : int
+    ; insert : bool (* Whether it's been several seconds since putting the ball in or not *)
+    ; alive : bool (* The ball is removed or not (To remove a simultaneous collision) *)
+    }
 
-  let to_string { index; insert } = Format.sprintf "%d,%d" index (if insert then 1 else 0)
+  let int_of_bool flag = if flag then 1 else 0
+
+  let bool_of_int flag = if flag = 1 then true else false
+
+  let to_string { index; insert; alive } = Format.sprintf "%d,%d,%d" index (int_of_bool insert) (int_of_bool alive)
 
   let of_string_opt str =
     let (let*) = Option.bind in
     match String.split_on_char ',' str with
-    | [index; insert] ->
+    | [index; insert; alive] ->
         let* index = int_of_string_opt index in
         let* insert = int_of_string_opt insert in
-        let insert = if insert = 1 then true else false in
-        Some {index; insert}
+        let insert = bool_of_int insert in
+        let* alive = int_of_string_opt alive in
+        let alive = bool_of_int alive in
+        Some {index; insert; alive}
     | _ -> None
 
   let of_string str =
@@ -176,7 +186,7 @@ module Label = struct
 end
 
 
-let createBall ~preview (posX, posY) index =
+let createBall ~preview (posX, posY) index : body Js.t =
   let { size; color; _ } : Balls.t = Balls.nth index in
   let render =
     (* These object literals both can not be typed even if using optdef as its type
@@ -199,14 +209,14 @@ let createBall ~preview (posX, posY) index =
   let option = object%js
     val isSleeping = preview
     val isSensor = preview
-    val label = Label.to_string { index; insert=false }
+    val label = Label.to_string { index; insert=false; alive=true }
     val restitution = 0.9
     val render = render
   end in
   let ball = _Bodies##circle posX posY size option in
   let () =
     if preview then ()
-    else ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true}) 1000. in
+    else ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true; alive=true}) 1000. in
   ball
 
 (* Return the valid ball position, s.t. above basket between walls *)
@@ -244,7 +254,7 @@ let generateBall t =
   let { size; _ } : Balls.t = Balls.nth index in
   let pos = adjustBallPosition t.env (pos_x, float_of_int Basket.capY) size in
   let n = createBall ~preview:true pos index in
-  _Composite##add engine##.world n;
+  _Composite##add engine##.world (Js.array [| n |]);
   t.ballGenerator <- None;
   t.nextBall <- Some n
 
@@ -262,17 +272,17 @@ let createMouseEvents t next_f =
             (match t.nextBall, Js.Opt.to_option e##.target with
              | Some n, Some tar ->
                  ((* The way to get relative mouse position :
-                    https://cpplover.blogspot.com/2009/06/dom-level-3.html *)
-                  let rect = tar##getBoundingClientRect in
-                  t.mousePositionX <- float_of_int e##.clientX -. rect##.left;
-                  let x = t.mousePositionX in
-                  let y = n##.position##.y in
-                  let { size; _ } : Balls.t =
-                    let { index; _ } : Label.t = Label.of_string n##.label in
-                    Balls.nth index in
-                  let (x, y) = adjustBallPosition t.env (x, y) size in
-                  _Body##setPosition n (Vector.create_float x y))
-                  
+                     https://cpplover.blogspot.com/2009/06/dom-level-3.html *)
+                   let rect = tar##getBoundingClientRect in
+                   t.mousePositionX <- float_of_int e##.clientX -. rect##.left;
+                   let x = t.mousePositionX in
+                   let y = n##.position##.y in
+                   let { size; _ } : Balls.t =
+                     let { index; _ } : Label.t = Label.of_string n##.label in
+                     Balls.nth index in
+                   let (x, y) = adjustBallPosition t.env (x, y) size in
+                   _Body##setPosition n (Vector.create_float x y))
+
              | _ -> ());
             Js._false))
       Js._false in
@@ -292,7 +302,7 @@ let createMouseEvents t next_f =
                    Dom_html.setTimeout
                      (fun () ->
                         let { index; _ } :Label.t = Label.of_string n##.label in
-                        n##.label := Label.to_string { index; insert=true })
+                        n##.label := Label.to_string { index; insert=true; alive=true })
                      1000. in
                  next_f ()
              | None -> ());
@@ -316,7 +326,7 @@ let addCollisionEvents t f_gameover =
             let optA = Label.of_string_opt a##.label in
             let optB = Label.of_string_opt b##.label in
             match optA, optB with
-            | Some { index ; _ }, Some { index = indexB; _ }
+            | Some ({ index ; alive=true; _ } as la), Some ({ index = indexB; alive=true; _ } as lb)
               when index = indexB && index + 1 < Balls.max ->
                 begin
                   let open Vector in
@@ -326,11 +336,13 @@ let addCollisionEvents t f_gameover =
                   let velA = a##.velocity in
                   let velB = b##.velocity in
                   let velM = mult (add velA velB) 0.5 in
+                  a##.label := Label.to_string {la with alive=false};
+                  b##.label := Label.to_string {lb with alive=false};
                   _Composite##remove engine##.world (Js.array [| a; b |]);
-                  let n = createBall ~preview:false (posM##.x, posM##.y) (index+1) in
+                  let n = createBall ~preview:false (posM##.x, posM##.y) (index + 1) in
                   _Body##setVelocity n velM;
-                  _Composite##add engine##.world n;
-                  let { score=s; _ } : Balls.t = Balls.nth (index+1) in
+                  _Composite##add engine##.world (Js.array [| n |]);
+                  let { score = s; _ } : Balls.t = Balls.nth (index + 1) in
                   t.score<-t.score + s
                 end
             | _ -> ())
