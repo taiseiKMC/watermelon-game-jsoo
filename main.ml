@@ -13,8 +13,7 @@ let engine = _Engine##create ()
 let runner = _Runner##create ()
 
 let element = (* Dom_html.document##.body *)
-  let c = Dom_html.getElementById "canvas-area" in
-  c
+  Dom_html.getElementById "canvas-area"
 
   let render =
   _Render##create

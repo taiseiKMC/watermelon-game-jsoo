@@ -95,9 +95,10 @@ module Balls = struct
 
   (* Ball data *)
   type t = { size : float; color : texture; index : int; score : int }
+
   let make size color index score = { size; color; index; score }
 
-  let _ballArray =
+  let _ballArray = (* (discarded) texture *)
     [|
       make 10. (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
       make 20. (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
@@ -129,6 +130,9 @@ module Balls = struct
   let max = Array.length ballArray
   let nth = Array.unsafe_get ballArray
 end
+
+(** [label] is a kind of id used by 'body's in matter-js.
+    [Label] provides the conversion between [Label.t] and [label] *)
 module Label = struct
   type t = { index : int ; insert : bool }
 
@@ -151,7 +155,10 @@ end
 
 let createBall ~preview (posX, posY) index =
   let { size; color; _ } : Balls.t = Balls.nth index in
-  let render = (* in でプロパティの存在判定をしているため optdef ではだめだった... *)
+  let render =
+    (* These object literals both can not be typed even if using optdef as its type
+       because matter-js library checks the existence of properties by in-operator.
+       in でプロパティの存在判定をしているため optdef ではだめだった... *)
     match color with
     | Color col -> Js.Unsafe.coerce object%js val fillStyle = col end
     | Texture (text, scale) ->
@@ -179,6 +186,7 @@ let createBall ~preview (posX, posY) index =
     else ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true}) 1000. in
   ball
 
+(* Return the valid ball position, s.t. above basket between walls *)
 let adjustBallPosition env (x, y) size =
   let (module Basket) = env.basket in
   let open Basket in
@@ -301,7 +309,7 @@ let addCollisionEvents t f_gameover =
     engine
     "collisionActive"
     (fun e ->
-       (* Check balls are overflowing *)
+       (* Check balls are overflowing. If so, call [f_gameover] *)
        let pairs = Js.to_array e##.pairs in
        Array.iter
          (fun p ->
@@ -317,6 +325,7 @@ let addCollisionEvents t f_gameover =
          pairs);
   ()
 
+(* Add static balls with fixed size for displaying information *)
 let addHierarchy t =
   let { basket=(module Basket); engine; _ } = t.env in
   let createBall (posX, posY) size index =
