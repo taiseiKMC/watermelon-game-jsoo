@@ -1,3 +1,7 @@
+---
+image: /blog/1000006134.jpg
+---
+
 <link rel="stylesheet" type="text/css" href="style.css" />
 
 # スイカゲームくらい自給自足すっか
