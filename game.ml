@@ -273,13 +273,12 @@ let addHierarchy t =
       val render = render
     end in
     _Bodies##circle posX posY size option in
-  let rec f i =
+  let rec loop i s =
     if i < Balls.max then
-      let ball = createBall (Basket.windowWidth*7/8, Basket.windowHeight*3/10 + i * 40) 15 i in
-      let () = _Composite##add engine##.world ball in
-      f (i+1)
-    else () in
-  f 0
+      let ball = createBall (PositionData.windowWidth*7/8, PositionData.windowHeight*3/10 + i * 40) 15 i in
+      loop (i+1) (ball::s)
+    else s in
+  _Composite##add engine##.world (Js.array @@ Array.of_list @@ loop 0 [])
 
 (* End the game, stop moving balls, delete events, and transit to the next scene *)
 let endGame t =
