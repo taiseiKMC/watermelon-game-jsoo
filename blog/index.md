@@ -23,8 +23,8 @@
 麓の方は今週末までくらいはまだまだ行けると思うので是非足を運んでみてください.
 
 ### 概要
-さて本記事に話を戻します.
-なんか巷でスイカゲームなるものが流行っているらしいですね.
+さて話を戻します.
+なんか巷でスイカゲームなるものが流行っている(いた?)らしいですね.
 見たところ, 物理エンジンを使ったパズルゲームで,
 同じ大きさの果物をくっつけて大きくして,
 一番大きい果物のスイカを作るのが一つの目標のゲームらしいです.
@@ -34,6 +34,7 @@
 リンク先で動いています.
 
 ![picture](watermelon-game.png)
+(※画像は開発中のものです)
 
 ## つくりかた
 スイカゲームを作るだけなら unity でホイってするのが多分一番楽なんでしょうけれど,
@@ -129,6 +130,7 @@ html ファイルでライブラリと共に読み込むと動きます.
 └── matter.min.js
 ```
 
+実行した様子です.
 ![sample](intro.gif)
 
 簡単ですね！
@@ -201,8 +203,7 @@ let () =
 jsoo はただ js を ocaml っぽく書けるというだけではなくて,
 ocaml の object の型付けによる恩恵を受けることができます.
 
-その例を兼ねて,
-スイカゲームの,
+その例を兼ねて, スイカゲームの,
 同じ大きさの果物をくっつけると大きくなる部分を例示します.
 ```ocaml
 module Matter = struct
@@ -244,8 +245,8 @@ module Matter = struct
   end
 end
 
-(** [createBall (x, y) index] で
-    座標 [(x,y)] に [index] 番目の大きさの果物を生成する *)
+(** [createBall (x, y) index] は
+    座標 [(x,y)] に [index] 番目の大きさの果物を生成する関数 *)
 let createBall : float * float -> int -> unit = fun (x, y) index -> ...
 
 let collison =
@@ -271,8 +272,7 @@ let collison =
               (* 2 オブジェクトの中間座標を計算 *)
               let posM = mult (add posA posB) 0.5 in
               (* 中間座標に1サイズ大きい果物を生成 *)
-              let n = createBall (posM##.x, posM##.y) (index + 1)
-              in
+              let n = createBall (posM##.x, posM##.y) (index + 1) in
               (* 衝突した 2 果物を世界から削除 *)
               Matter._Composite##remove engine##.world (Js.array [| a; b |]);
               (* 生成した果物を世界に追加 *)
@@ -291,7 +291,8 @@ let collison =
 `posM##.z` のような `vector` クラス型に定義されていないプロパティアクセスは型エラーとしてコンパイル時に検出できるというところに現れます.
 
 ここでは vector 周りには型をある程度与えてますが,
-matter-js の vector モジュールで定義されているメンバはもちろん `create`, `add`, `mult` ではありません.
+matter-js の vector モジュールで定義されているメンバはもちろん
+`create`, `add`, `mult` だけではありません.
 にも関わらずこのように使うところから*段階的に*型を付けていけるのは柔軟で便利ですね.
 
 ## デプロイする
@@ -307,14 +308,13 @@ dune と jekyll[^jekyll] でビルドしてデプロイするように構築し�
 dune の環境構築と build のステップを加えただけで,
 思いの外シンプルにできました.
 
-ハマりポイントとしては, dune が js ファイルをビルドする(例の)場所が隠しファイル扱いだからなのか,
-`actions/jekyll-build-pages@v1` のステップでせっかく dune でビルドしたファイルが無視されてしまっていたので,
-ビルド先のディレクトリ名を変えて対応してます.
+- ハマりポイントとしては, dune が js ファイルをビルドする(例の)場所が隠しファイル扱いだからなのか,
+  `actions/jekyll-build-pages@v1` のステップでせっかく dune でビルドしたファイルが無視されてしまっていたので, ビルド先のディレクトリ名を変えて対応してます.
 
 
 これで https://github.com/taiseiKMC/watermelon-game-jsoo の ocaml コードが
 そのまま [スイカゲームもどき](../index.md) で動くようになったので,
-ゲーム実装パートをもう少し見たい方はここを見てください.
+ゲーム実装パートをもう少し見たい方は github に置いたコードを見てください.
 
 ## おしまい
 というわけでゲーム関係と見せかけた ocaml の記事でした!
@@ -333,6 +333,13 @@ ML系言語に慣れている方には合うのではないでしょうか.
 
 
 明日の担当は pollenJP さんです.
+
+# Reference
+公式は略
+- [ウェブブラウザで関数型プログラミング! js_of_ocaml](https://camlspotter.hatenablog.com/entry/20111015/1318664763)
+  - ちょっと古いですが, とりあえず Unsafe にして段階的に移植していく手法を参考にしました
+- [matter.jsの基本的な機能を使ったサンプル集](https://mmsrtech.com/entry/2022/10/16/210254#%E8%A1%9D%E7%AA%81%E3%83%95%E3%82%A3%E3%83%AB%E3%82%BF%E3%83%BC)
+  - matter-js の使い方はこの辺を見てました
 
 # Footnote
 [^jsoo-relation]: 本当は因果関係が逆で, jsoo の勉強がてらに適当に実装する js のお題を探してスイカゲームを思いついた
