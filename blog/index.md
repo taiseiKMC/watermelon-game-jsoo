@@ -10,9 +10,9 @@
 k8s はすごいですが大変そうですね(こなみ).
 
 <!-- Reference: https://mbdb.jp/web-technical/hatenablog-blogcard-ogp-correspondence.html -->
-<iframe style="width:100%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://adventar.org/calendars/8840" width="300" height="150" frameborder="0" scrolling="no"></iframe>
+<iframe style="width:70%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://adventar.org/calendars/8840" width="300" height="150" frameborder="0" scrolling="no"></iframe>
 
-<iframe style="width:100%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://qiita.com/segre5458/items/3d6bf9a10b83ddedfa1b" width="300" height="150" frameborder="0" scrolling="no"></iframe>
+<iframe style="width:70%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://qiita.com/segre5458/items/3d6bf9a10b83ddedfa1b" width="300" height="150" frameborder="0" scrolling="no"></iframe>
 
 もう 12 月に入りましたが, 京都ではまだまだ紅葉が見頃の場所が結構あります.
 先日行った京都の大原野はそこそこ僻地で行くのが大変でしたが,
