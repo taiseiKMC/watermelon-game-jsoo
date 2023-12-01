@@ -2,64 +2,19 @@
 
 open Js_of_ocaml
 open Matter
-
-
-module type Basket = sig
-  val windowWidth : int
-  val windowHeight : int
-  val basketLeft : int
-  val basketRight : int
-  val edgeWidth : int
-  val capY : int
-  val scoreLetterX : int
-  val scoreLetterY : int
-  val scoreX : int
-  val scoreY : int
-  val hierarchyLetterX : int
-  val hierarchyLetterY : int
-  val gameOverLetterX : int
-  val gameOverLetterY : int
-  val retryLetterX : int
-  val retryLetterY : int
-end
-
-(* Generate position data from window size *)
-module MakeBasket
-    (A : sig
-       val windowWidth : int
-       val windowHeight : int
-     end) : Basket = struct
-  include A
-  let basketLeft = windowWidth * 1 / 4
-  let basketRight = windowWidth * 3 / 4
-  let edgeWidth = windowWidth * 1 / 20
-  let capY = windowHeight * 1 / 20
-
-  let scoreLetterX = windowWidth / 8
-  let scoreLetterY = windowHeight * 4 / 20
-  let scoreX = scoreLetterX
-  let scoreY = scoreLetterY + windowHeight * 1 / 20
-  let hierarchyLetterX = windowWidth * 7 / 8
-  let hierarchyLetterY = windowHeight * 1 / 5
-  let gameOverLetterX = windowWidth / 2
-  let gameOverLetterY = windowHeight * 8 / 20
-  let retryLetterX = gameOverLetterX
-  let retryLetterY = gameOverLetterY + windowHeight * 3 / 20
-end
-
+open Position
 
 type environment =
   { canvas : Dom_html.eventTarget Js.t
-  ; basket : (module Basket)
+  ; positions : (module PositionData)
   ; engine : engine Js.t
   ; runner : runner Js.t
   ; state : Random.State.t }
 
-
 let capLabel = "cap"
 let createBasket env =
-  let (module Basket) = env.basket in
-  let open Basket in
+  let (module PositionData) = env.positions in
+  let open PositionData in
   let option = object%js val isStatic=true end in
   let ground =
     _Bodies##rectangle
@@ -111,48 +66,6 @@ type t =
   ; env : environment
   }
 
-module Balls = struct
-  type texture = Texture of string * float | Color of string
-
-  (* Ball data *)
-  type t = { size : float; color : texture; index : int; score : int }
-
-  let make color index score =
-    let size = float_of_int @@ index * 10 + 10 in
-    { size; color; index; score }
-
-  let _ballArray = (* (discarded) texture *)
-    [|
-      make (Texture ("./resources/cherry.png", 2. *. 10. /. 145.)) 0 0; (* cherry *)
-      make (Texture ("./resources/strawberry.png", 2. *. 20. /. 350.)) 1 1; (* strawberry *)
-      make (Texture ("./resources/grape.png", 2. *. 30. /. 260.)) 2 2; (* grape *)
-      make (Texture ("./resources/dekopon.png", 2. *. 40. /. 300.)) 3 4; (* dekopon *)
-      make (Texture ("./resources/kaki.png", 2. *. 50. /. 350.)) 4 8; (* kaki *)
-      make (Texture ("./resources/apple.png", 2. *. 60. /. 360.)) 5 16; (* apple *)
-      make (Texture ("./resources/nashi.png", 2. *. 70. /. 340.)) 6 32; (* apple pear *)
-      make (Texture ("./resources/peach.png", 2. *. 80. /. 310.)) 7 64; (* peach *)
-      make (Texture ("./resources/pineapple.png", 2. *. 90. /. 180.)) 8 128; (* pineapple *)
-      make (Texture ("./resources/melon.png", 2. *. 100. /. 340.)) 9 256; (* melon *)
-      make (Texture ("./resources/watermelon.png", 2. *. 110. /. 320.)) 10 512; (* watermelon *)
-    |]
-
-  let ballArray =
-    [|
-      make (Color "#ff0000") 0 0; (* cherry *)
-      make (Color "#00c0ff") 1 1; (* strawberry *)
-      make (Color "#a839cb") 2 2; (* grape *)
-      make (Color "#f6a03c") 3 4; (* dekopon *)
-      make (Color "#ff6300") 4 8; (* kaki *)
-      make (Color "#3639ff") 5 16; (* apple *)
-      make (Color "#e3bf45") 6 32; (* apple pear *)
-      make (Color "#e47ec3") 7 64; (* peach *)
-      make (Color "#28f4e5") 8 128; (* pineapple *)
-      make (Color "#4fe13e") 9 256; (* melon *)
-      make (Color "#0e8e00") 10 512; (* watermelon *)
-    |]
-  let max = Array.length ballArray
-  let nth = Array.unsafe_get ballArray
-end
 
 (** [label] is a kind of id used by 'body's in matter-js.
     [Label] provides the conversion between [Label.t] and [label] *)
@@ -185,27 +98,9 @@ module Label = struct
     of_string_opt str |> Option.get
 end
 
-
 let createBall ~preview (posX, posY) index : body Js.t =
   let { size; color; _ } : Balls.t = Balls.nth index in
-  let render =
-    (* These object literals both can not be typed even if using optdef as its type
-       because matter-js library checks the existence of properties by in-operator.
-       in でプロパティの存在判定をしているため optdef ではだめだった... *)
-    match color with
-    | Color col -> Js.Unsafe.coerce object%js val fillStyle = col end
-    | Texture (text, scale) ->
-        Js.Unsafe.coerce
-          object%js
-            val sprite =
-              object%js
-                val texture = text
-                val xScale = scale
-                val yScale = scale
-              end
-          end
-  in
-
+  let render = Balls.render color in
   let option = object%js
     val isSleeping = preview
     val isSensor = preview
@@ -221,8 +116,8 @@ let createBall ~preview (posX, posY) index : body Js.t =
 
 (* Return the valid ball position, s.t. above basket between walls *)
 let adjustBallPosition env (x, y) size =
-  let (module Basket) = env.basket in
-  let open Basket in
+  let (module PositionData) = env.positions in
+  let open PositionData in
   let x = max x (float_of_int basketLeft +. float_of_int edgeWidth /. 2. +. size) in
   let x = min x (float_of_int basketRight -. float_of_int edgeWidth /. 2. -. size) in
   let y = min y (float_of_int capY -. size) in
@@ -248,11 +143,11 @@ let nextIndex = _nextIndex1
 
 (* Put in a new ball to the basket *)
 let generateBall t =
-  let { engine; state; basket=(module Basket); _ } = t.env in
+  let { engine; state; positions=(module PositionData); _ } = t.env in
   let pos_x = t.mousePositionX in
   let index = nextIndex state in
   let { size; _ } : Balls.t = Balls.nth index in
-  let pos = adjustBallPosition t.env (pos_x, float_of_int Basket.capY) size in
+  let pos = adjustBallPosition t.env (pos_x, float_of_int PositionData.capY) size in
   let n = createBall ~preview:true pos index in
   _Composite##add engine##.world (Js.array [| n |]);
   t.ballGenerator <- None;
@@ -369,23 +264,9 @@ let addCollisionEvents t f_gameover =
 
 (* Add static balls with fixed size for displaying information *)
 let addHierarchy t =
-  let { basket=(module Basket); engine; _ } = t.env in
-  let createBall (posX, posY) size index =
-    let { color; _ } : Balls.t = Balls.nth index in
-    let render =
-      match color with
-      | Color col -> Js.Unsafe.coerce object%js val fillStyle = col end
-      | Texture (text, scale) ->
-          Js.Unsafe.coerce
-            object%js
-              val sprite =
-                object%js
-                  val texture = text
-                  val xScale = scale
-                  val yScale = scale
-                end
-            end
-    in
+  let { positions=(module PositionData); engine; _ } = t.env in
+  let createBall (posX, posY) size index : body Js.t =
+    let render = Balls.render (Balls.nth index).color in
     let option = object%js
       val isSensor = true
       val isStatic = true
@@ -465,14 +346,14 @@ and restartGame t =
   startGame t
 
 let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
-  let module Basket = MakeBasket(struct let windowWidth=windowWidth let windowHeight=windowHeight end) in
-  let env = { engine; runner; canvas; basket=(module Basket); state } in
+  let module PositionData = MakePositionData(struct let windowWidth=windowWidth let windowHeight=windowHeight end) in
+  let env = { engine; runner; canvas; positions=(module PositionData); state } in
   let mousePositionX = float_of_int @@ windowWidth/2 in
   { nextBall=None; ballGenerator=None; eventIds=[]; score=0; mousePositionX; scene=Game; env }
 
 let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
-  let { basket=(module Basket); _ } = t.env in
-  let open Basket in
+  let { positions=(module PositionData); _ } = t.env in
+  let open PositionData in
   ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/20));
   ctxt##.fillStyle := Js.string "#000000";
   ctxt##.textAlign := Js.string "center";
