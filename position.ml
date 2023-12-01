@@ -21,6 +21,11 @@ module type PositionData = sig
   val hierarchyLetterY : int
   val hierarchyBallX : int
   val hierarchyBallY : int
+  val nextLetterX : int
+  val nextLetterY : int
+  val nextPreviewBallX : int
+  val nextPreviewBallY : int
+  val previewBallSize : int
   val gameOverLetterX : int
   val gameOverLetterY : int
   val retryLetterX : int
@@ -51,9 +56,14 @@ module MakePositionData
   let scoreX = scoreLetterX
   let scoreY = scoreLetterY + windowHeight * 1 / 20
   let hierarchyLetterX = windowWidth * 7 / 8
-  let hierarchyLetterY = windowHeight * 1 / 5
+  let hierarchyLetterY = windowHeight * 5 / 20
   let hierarchyBallX = hierarchyLetterX
-  let hierarchyBallY = hierarchyLetterY + windowHeight * 1 / 10
+  let hierarchyBallY = hierarchyLetterY + windowHeight * 1 / 20
+  let nextLetterX = hierarchyLetterX
+  let nextLetterY = windowHeight * 2 / 20
+  let nextPreviewBallX = hierarchyLetterX
+  let nextPreviewBallY = windowHeight * 3 / 20
+  let previewBallSize = 15
   let gameOverLetterX = windowWidth / 2
   let gameOverLetterY = windowHeight * 9 / 20
   let retryLetterX = gameOverLetterX

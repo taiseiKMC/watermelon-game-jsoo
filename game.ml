@@ -43,21 +43,23 @@ let createBasket env =
       capRealY
       windowWidth
       capThickness
-      object%js
-        val label = capLabel
-        val isStatic = true
-        val isSensor = true
-        val render =
-          object%js
-            val visible = false
-          end
-      end in
+        object%js
+          val label = capLabel
+          val isStatic = true
+          val isSensor = true
+          val render =
+            object%js
+              val visible = false
+            end
+        end in
   [| ground; wallLeft; wallRight; cap |]
 
 type scene = Game | Over | WaitRetry
 
 type t =
-  { mutable nextBall : body Js.t option
+  { mutable grabbedBall : body Js.t option
+  ; mutable nextIndex : int
+  ; mutable nextPreviewBall : body Js.t
   ; mutable ballGenerator : Dom_html.timeout_id_safe option
   ; mutable eventIds : Dom.event_listener_id list
   ; mutable mousePositionX : float
@@ -111,8 +113,20 @@ let createBall ~preview (posX, posY) index : body Js.t =
   let ball = _Bodies##circle posX posY size option in
   let () =
     if preview then ()
-    else ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true; alive=true}) 1000. in
+    else
+      (* To avoid a game over by a ball
+         that is just merged, gets larger, and touches [capY], the overflow detection line. *)
+      ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true; alive=true}) 1000. in
   ball
+
+let createStaticBall (posX, posY) size index : body Js.t =
+  let render = Balls.render (Balls.nth index).color in
+  let option = object%js
+    val isSensor = true
+    val isStatic = true
+    val render = render
+  end in
+  _Bodies##circle posX posY size option
 
 (* Return the valid ball position, s.t. above basket between walls *)
 let adjustBallPosition env (x, y) size =
@@ -124,34 +138,42 @@ let adjustBallPosition env (x, y) size =
   (x, y)
 
 (* Exponential distribution *)
-let _nextIndex0 state =
-  let nextIndex, _r =
+let _randomIndex0 state =
+  let index, _r =
     let r = Random.State.int state ((1 lsl Balls.max) - 1) + 1 in
     let rec loop r n =
       if r > 0 then loop (r lsr 1) (n-1)
       else n
     in
     loop r Balls.max, r in
-  nextIndex
+  index
 
 (* Uniform distribution [0, 4] *)
-let _nextIndex1 state =
+let _randomIndex1 state =
   Random.State.int state 5
 
 (* Generate index at random *)
-let nextIndex = _nextIndex1
+let generateRandomIndex = _randomIndex1
+let generateNextPreviewBall positions nextIndex =
+  let (module PositionData : PositionData) = positions in
+  createStaticBall (PositionData.nextPreviewBallX, PositionData.nextPreviewBallY) PositionData.previewBallSize nextIndex
 
 (* Put in a new ball to the basket *)
 let generateBall t =
   let { engine; state; positions=(module PositionData); _ } = t.env in
-  let pos_x = t.mousePositionX in
-  let index = nextIndex state in
-  let { size; _ } : Balls.t = Balls.nth index in
-  let pos = adjustBallPosition t.env (pos_x, float_of_int PositionData.capY) size in
-  let n = createBall ~preview:true pos index in
+  let posX = t.mousePositionX in
+  let { size; _ } : Balls.t = Balls.nth t.nextIndex in
+  let pos = adjustBallPosition t.env (posX, float_of_int PositionData.capY) size in
+  let n = createBall ~preview:true pos t.nextIndex in
   _Composite##add engine##.world (Js.array [| n |]);
+
+  t.nextIndex <- generateRandomIndex state;
+  _Composite##remove engine##.world (Js.array [| t.nextPreviewBall |]);
+  t.nextPreviewBall <- generateNextPreviewBall t.env.positions t.nextIndex;
+  _Composite##add engine##.world (Js.array [| t.nextPreviewBall |]);
+
   t.ballGenerator <- None;
-  t.nextBall <- Some n
+  t.grabbedBall <- Some n
 
 (* Add mouse events related to the game *)
 let createMouseEvents t next_f =
@@ -164,7 +186,7 @@ let createMouseEvents t next_f =
       (handler
          (fun e ->
             (* Move the ball position horizontally following the mouse position *)
-            (match t.nextBall, Js.Opt.to_option e##.target with
+            (match t.grabbedBall, Js.Opt.to_option e##.target with
              | Some n, Some tar ->
                  ((* The way to get relative mouse position :
                      https://cpplover.blogspot.com/2009/06/dom-level-3.html *)
@@ -188,20 +210,20 @@ let createMouseEvents t next_f =
       (handler
          (fun _e ->
             (* Throw in the ball *)
-            (match t.nextBall with
+            (match t.grabbedBall with
              | Some n ->
                  _Sleeping##set n false;
                  _Body##setSpeed n 0;
                  n##.isSensor := false;
-                 let _ =
+                 let _ = (* Ignore the ball touching game-over line for 1 second *)
                    Dom_html.setTimeout
                      (fun () ->
-                        let { index; _ } :Label.t = Label.of_string n##.label in
+                        let { index; _ } : Label.t = Label.of_string n##.label in
                         n##.label := Label.to_string { index; insert=true; alive=true })
                      1000. in
                  next_f ()
              | None -> ());
-            t.nextBall <- None;
+            t.grabbedBall <- None;
             Js._false))
       Js._false in
   [id0; id1]
@@ -265,17 +287,9 @@ let addCollisionEvents t f_gameover =
 (* Add static balls with fixed size for displaying information *)
 let addHierarchy t =
   let { positions=(module PositionData); engine; _ } = t.env in
-  let createBall (posX, posY) size index : body Js.t =
-    let render = Balls.render (Balls.nth index).color in
-    let option = object%js
-      val isSensor = true
-      val isStatic = true
-      val render = render
-    end in
-    _Bodies##circle posX posY size option in
   let rec loop i s =
     if i < Balls.max then
-      let ball = createBall (PositionData.hierarchyBallX, PositionData.hierarchyBallY + i * 40) 15 i in
+      let ball = createStaticBall (PositionData.hierarchyBallX, PositionData.hierarchyBallY + i * 40) 15 i in
       loop (i+1) (ball::s)
     else s in
   _Composite##add engine##.world (Js.array @@ Array.of_list @@ loop 0 [])
@@ -284,7 +298,7 @@ let addHierarchy t =
 let endGame t =
   let { engine; runner; _ } = t.env in
   t.scene <- Over;
-  t.nextBall <- None;
+  t.grabbedBall <- None;
   let () =
     match t.ballGenerator with
     | Some id ->
@@ -302,10 +316,14 @@ let endGame t =
   ()
 
 let reset t =
-  let { engine; runner; _ } = t.env in
+  let { engine; runner; positions; state; _ } = t.env in
   resetEngine engine;
   runner##.enabled := Js._true;
-  t.score<-0
+  let nextIndex = generateRandomIndex state in
+  let nextPreviewBall = generateNextPreviewBall positions nextIndex in
+  t.nextIndex <- nextIndex;
+  t.nextPreviewBall <- nextPreviewBall;
+  t.score <- 0
 
 let rec startGame t =
   let { engine; _ } = t.env in
@@ -322,6 +340,7 @@ let rec startGame t =
   let basket = createBasket t.env in
   _Composite##add engine##.world (Js.array basket);
   addHierarchy t;
+  _Composite##add engine##.world (Js.array [| t.nextPreviewBall |]);
   addCollisionEvents t (fun () -> endGame t);
   let _ =
     Dom_html.(
@@ -347,8 +366,19 @@ and restartGame t =
 let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
   let module PositionData = MakePositionData(struct let windowWidth=windowWidth let windowHeight=windowHeight end) in
   let env = { engine; runner; canvas; positions=(module PositionData); state } in
-  let mousePositionX = float_of_int @@ windowWidth/2 in
-  { nextBall=None; ballGenerator=None; eventIds=[]; score=0; mousePositionX; scene=Game; env }
+  let mousePositionX = float_of_int @@ windowWidth / 2 in
+  let nextIndex = generateRandomIndex state in
+  let nextPreviewBall = generateNextPreviewBall (module PositionData) nextIndex in
+  { grabbedBall = None
+  ; nextIndex
+  ; nextPreviewBall
+  ; ballGenerator = None
+  ; eventIds = []
+  ; score = 0
+  ; mousePositionX
+  ; scene = Game
+  ; env
+  }
 
 let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
   let { positions=(module PositionData); _ } = t.env in
@@ -364,6 +394,10 @@ let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
     (Js.string (Format.sprintf "%d" (t.score)))
     (float_of_int scoreX)
     (float_of_int scoreY);
+  ctxt##fillText
+    (Js.string (Format.sprintf "Next"))
+    (float_of_int nextLetterX)
+    (float_of_int nextLetterY);
   ctxt##fillText
     (Js.string (Format.sprintf "Hierarchy"))
     (float_of_int hierarchyLetterX)
