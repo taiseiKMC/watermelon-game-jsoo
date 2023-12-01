@@ -24,7 +24,7 @@ let render =
         val width = windowWidth
         val height = windowHeight
         val wireframes = false
-        val background = "white"
+        val background = "#f0f0e0"
       end
     end)
 
