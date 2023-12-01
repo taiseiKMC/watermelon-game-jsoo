@@ -37,7 +37,7 @@ module MakePositionData
   let hierarchyLetterX = windowWidth * 7 / 8
   let hierarchyLetterY = windowHeight * 1 / 5
   let gameOverLetterX = windowWidth / 2
-  let gameOverLetterY = windowHeight * 8 / 20
+  let gameOverLetterY = windowHeight * 9 / 20
   let retryLetterX = gameOverLetterX
   let retryLetterY = gameOverLetterY + windowHeight * 3 / 20
 end

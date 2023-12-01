@@ -37,32 +37,35 @@ let game = Game.make ~engine ~runner ~canvas ~state:st ~windowWidth ~windowHeigh
 
 let draw () =
   resetEngine engine;
+  let titleY = float_of_int @@ windowHeight * 9 / 20 in
+  let clickMessageY = float_of_int @@ windowHeight * 12 / 20 in
+  let ctxt : Dom_html.canvasRenderingContext2D Js.t =
+    canvas##getContext Dom_html._2d_ in
   _Events##on
     render
     "afterRender"
     (fun _e -> (* Expect to call this every frame *)
-       let ctxt : Dom_html.canvasRenderingContext2D Js.t =
-         canvas##getContext Dom_html._2d_ in
        match !scene with
        | Game -> Game.draw game ctxt
-       | Title ->
-           (ctxt##.font := Js.string (Format.sprintf "bold %dpx serif" (windowHeight / 10));
-            ctxt##.fillStyle := Js.string "#00e020";
-            ctxt##.textAlign := Js.string "center";
-            ctxt##fillText
-              (Js.string "スイカゲームもどき")
-              (float_of_int windowWidth /. 2.)
-              (float_of_int windowHeight *. 2. /. 5.);
-            ctxt##strokeText
-              (Js.string "スイカゲームもどき")
-              (float_of_int windowWidth /. 2.)
-              (float_of_int windowHeight *. 2. /. 5.);
-            ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight / 20));
-            ctxt##.fillStyle := Js.string "#000000";
-            ctxt##fillText
-              (Js.string "Click to start")
-              (float_of_int windowWidth /. 2.)
-              (float_of_int windowHeight *. 11. /. 20.)))
+       | Title -> begin
+           ctxt##.font := Js.string (Format.sprintf "bold %dpx serif" (windowHeight / 10));
+           ctxt##.fillStyle := Js.string "#00e020";
+           ctxt##.textAlign := Js.string "center";
+           ctxt##fillText
+             (Js.string "スイカゲームもどき")
+             (float_of_int windowWidth /. 2.)
+             titleY;
+           ctxt##strokeText
+             (Js.string "スイカゲームもどき")
+             (float_of_int windowWidth /. 2.)
+             titleY;
+           ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight / 20));
+           ctxt##.fillStyle := Js.string "#000000";
+           ctxt##fillText
+             (Js.string "Click to start")
+             (float_of_int windowWidth /. 2.)
+             clickMessageY
+         end)
 
 let () =
   _Render##run render;

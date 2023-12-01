@@ -15,4 +15,6 @@ val make :
 
 val startGame : t -> unit
 
+(** Draws GUI that does not use matter-js like the score display.
+    Expected to be called in "afterRender" event handler *)
 val draw : t -> Dom_html.canvasRenderingContext2D Js.t -> unit
