@@ -3,13 +3,15 @@
 # スイカゲームくらい自給自足すっか
 ### あいさつ
 こんにちは, kmcid: taisei です.
-この記事は KMC Advent Calendar 2023 の 2 日目の記事です.
+この記事は [KMC Advent Calendar 2023](https://adventar.org/calendars/8840) の 2 日目の記事です.
 
 昨日の記事は segre さんによる
 [kubeadm+flannelでkubernetesクラスタのIPv6環境構築](https://qiita.com/segre5458/items/3d6bf9a10b83ddedfa1b) でした.
 k8s はすごいですが大変そうですね(こなみ).
 
 <!-- Reference: https://mbdb.jp/web-technical/hatenablog-blogcard-ogp-correspondence.html -->
+<iframe style="width:100%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://adventar.org/calendars/8840" width="300" height="150" frameborder="0" scrolling="no"></iframe>
+
 <iframe style="width:100%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://qiita.com/segre5458/items/3d6bf9a10b83ddedfa1b" width="300" height="150" frameborder="0" scrolling="no"></iframe>
 
 もう 12 月に入りましたが, 京都ではまだまだ紅葉が見頃の場所が結構あります.
@@ -348,7 +350,7 @@ jsoo を使うと,
 ML系言語に慣れている方には合うのではないでしょうか.
 
 
-明日の担当は pollenJP さんです.
+KMC Advent Calender 2023 の明日の担当は pollenJP さんです.
 
 # Reference
 公式は略
