@@ -11,12 +11,58 @@ type environment =
   ; runner : runner Js.t
   ; state : Random.State.t }
 
+type scene = Game | Over | WaitRetry
+
+type t =
+  { mutable grabbedBall : body Js.t option (* The ball about to be dropped to the basket *)
+  ; mutable nextIndex : int
+  ; mutable nextPreviewBall : body Js.t (* A static body to display what is the next ball *)
+  ; mutable ballGenerator : Dom_html.timeout_id_safe option (* The caller of [generateBall] with 2 seconds interval *)
+  ; mutable eventIds : Dom.event_listener_id list
+  ; mutable mousePositionX : float
+  ; mutable scene : scene
+  ; mutable score : int
+  ; env : environment
+  }
+
+(** [label] is a kind of id used by 'body's in matter-js.
+    [Label] provides the conversion between [Label.t] and [label] *)
+module Label = struct
+  type t =
+    { index : int
+    ; insert : bool (* Whether it's been several seconds since putting the ball in or not *)
+    ; alive : bool (* The ball is removed or not (To remove a simultaneous collision) *)
+    }
+
+  let int_of_bool flag = if flag then 1 else 0
+
+  let bool_of_int flag = if flag = 1 then true else false
+
+  let to_string { index; insert; alive } = Format.sprintf "%d,%d,%d" index (int_of_bool insert) (int_of_bool alive)
+
+  let of_string_opt str =
+    let (let*) = Option.bind in
+    match String.split_on_char ',' str with
+    | [index; insert; alive] ->
+        let* index = int_of_string_opt index in
+        let* insert = int_of_string_opt insert in
+        let insert = bool_of_int insert in
+        let* alive = int_of_string_opt alive in
+        let alive = bool_of_int alive in
+        Some {index; insert; alive}
+    | _ -> None
+
+  let of_string str =
+    of_string_opt str |> Option.get
+end
+
 let capLabel = "cap"
+
 let createBasket env =
   let (module PositionData) = env.positions in
   let open PositionData in
   let option = object%js val isStatic=true end in
-  let ground =
+  let bottom =
     _Bodies##rectangle
       basketBottomX
       basketBottomY
@@ -52,53 +98,7 @@ let createBasket env =
               val visible = false
             end
         end in
-  [| ground; wallLeft; wallRight; cap |]
-
-type scene = Game | Over | WaitRetry
-
-type t =
-  { mutable grabbedBall : body Js.t option
-  ; mutable nextIndex : int
-  ; mutable nextPreviewBall : body Js.t
-  ; mutable ballGenerator : Dom_html.timeout_id_safe option
-  ; mutable eventIds : Dom.event_listener_id list
-  ; mutable mousePositionX : float
-  ; mutable scene : scene
-  ; mutable score : int
-  ; env : environment
-  }
-
-
-(** [label] is a kind of id used by 'body's in matter-js.
-    [Label] provides the conversion between [Label.t] and [label] *)
-module Label = struct
-  type t =
-    { index : int
-    ; insert : bool (* Whether it's been several seconds since putting the ball in or not *)
-    ; alive : bool (* The ball is removed or not (To remove a simultaneous collision) *)
-    }
-
-  let int_of_bool flag = if flag then 1 else 0
-
-  let bool_of_int flag = if flag = 1 then true else false
-
-  let to_string { index; insert; alive } = Format.sprintf "%d,%d,%d" index (int_of_bool insert) (int_of_bool alive)
-
-  let of_string_opt str =
-    let (let*) = Option.bind in
-    match String.split_on_char ',' str with
-    | [index; insert; alive] ->
-        let* index = int_of_string_opt index in
-        let* insert = int_of_string_opt insert in
-        let insert = bool_of_int insert in
-        let* alive = int_of_string_opt alive in
-        let alive = bool_of_int alive in
-        Some {index; insert; alive}
-    | _ -> None
-
-  let of_string str =
-    of_string_opt str |> Option.get
-end
+  [| bottom; wallLeft; wallRight; cap |]
 
 let createBall ~preview (posX, posY) index : body Js.t =
   let { size; color; _ } : Balls.t = Balls.nth index in
@@ -119,6 +119,7 @@ let createBall ~preview (posX, posY) index : body Js.t =
       ignore @@ Dom_html.setTimeout (fun () -> ball##.label := Label.to_string {index; insert=true; alive=true}) 1000. in
   ball
 
+(* For GUI *)
 let createStaticBall (posX, posY) size index : body Js.t =
   let render = Balls.render (Balls.nth index).color in
   let option = object%js
@@ -154,9 +155,11 @@ let _randomIndex1 state =
 
 (* Generate index at random *)
 let generateRandomIndex = _randomIndex1
+
 let generateNextPreviewBall positions nextIndex =
   let (module PositionData : PositionData) = positions in
-  createStaticBall (PositionData.nextPreviewBallX, PositionData.nextPreviewBallY) PositionData.previewBallSize nextIndex
+  let open PositionData in
+  createStaticBall (nextPreviewBallX, nextPreviewBallY) previewBallSize nextIndex
 
 (* Put in a new ball to the basket *)
 let generateBall t =
@@ -166,14 +169,15 @@ let generateBall t =
   let pos = adjustBallPosition t.env (posX, float_of_int PositionData.capY) size in
   let n = createBall ~preview:true pos t.nextIndex in
   _Composite##add engine##.world (Js.array [| n |]);
+  t.ballGenerator <- None;
+  t.grabbedBall <- Some n;
 
+  (* Update "Next" ball *)
   t.nextIndex <- generateRandomIndex state;
   _Composite##remove engine##.world (Js.array [| t.nextPreviewBall |]);
   t.nextPreviewBall <- generateNextPreviewBall t.env.positions t.nextIndex;
-  _Composite##add engine##.world (Js.array [| t.nextPreviewBall |]);
+  _Composite##add engine##.world (Js.array [| t.nextPreviewBall |])
 
-  t.ballGenerator <- None;
-  t.grabbedBall <- Some n
 
 (* Add mouse events related to the game *)
 let createMouseEvents t next_f =
@@ -289,7 +293,7 @@ let addHierarchy t =
   let { positions=(module PositionData); engine; _ } = t.env in
   let rec loop i s =
     if i < Balls.max then
-      let ball = createStaticBall (PositionData.hierarchyBallX, PositionData.hierarchyBallY + i * 40) 15 i in
+      let ball = createStaticBall (PositionData.hierarchyBallX, PositionData.hierarchyBallY + i * 40) PositionData.previewBallSize i in
       loop (i+1) (ball::s)
     else s in
   _Composite##add engine##.world (Js.array @@ Array.of_list @@ loop 0 [])
@@ -368,6 +372,7 @@ let make ~engine ~runner ~canvas ~windowWidth ~windowHeight ~state () =
   let env = { engine; runner; canvas; positions=(module PositionData); state } in
   let mousePositionX = float_of_int @@ windowWidth / 2 in
   let nextIndex = generateRandomIndex state in
+  (* [nextPreviewBall] body should be added to [engine##.world] after starting game *)
   let nextPreviewBall = generateNextPreviewBall (module PositionData) nextIndex in
   { grabbedBall = None
   ; nextIndex
@@ -402,30 +407,22 @@ let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
     (Js.string (Format.sprintf "Hierarchy"))
     (float_of_int hierarchyLetterX)
     (float_of_int hierarchyLetterY);
+  let drawGameoverLetter () =
+    ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
+    ctxt##.fillStyle := Js.string "#00e020";
+    ctxt##fillText
+      (Js.string "GameOver")
+      (float_of_int gameOverLetterX)
+      (float_of_int gameOverLetterY);
+    ctxt##strokeText
+      (Js.string "GameOver")
+      (float_of_int gameOverLetterX)
+      (float_of_int gameOverLetterY) in
   match t.scene with
   | Game -> ()
-  | Over ->
-      ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
-        ctxt##.fillStyle := Js.string "#00e020";
-        ctxt##fillText
-          (Js.string "GameOver")
-          (float_of_int gameOverLetterX)
-          (float_of_int gameOverLetterY);
-        ctxt##strokeText
-          (Js.string "GameOver")
-          (float_of_int gameOverLetterX)
-          (float_of_int gameOverLetterY))
+  | Over -> drawGameoverLetter ()
   | WaitRetry ->
-      ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
-        ctxt##.fillStyle := Js.string "#00e020";
-        ctxt##fillText
-          (Js.string "GameOver")
-          (float_of_int gameOverLetterX)
-          (float_of_int gameOverLetterY);
-        ctxt##strokeText
-          (Js.string "GameOver")
-          (float_of_int gameOverLetterX)
-          (float_of_int gameOverLetterY);
+      ( drawGameoverLetter ();
         ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/20));
         ctxt##.fillStyle := Js.string "#000000";
         ctxt##fillText
