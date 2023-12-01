@@ -406,17 +406,28 @@ let draw t (ctxt : Dom_html.canvasRenderingContext2D Js.t) =
   | Game -> ()
   | Over ->
       ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
+        ctxt##.fillStyle := Js.string "#00e020";
         ctxt##fillText
+          (Js.string "GameOver")
+          (float_of_int gameOverLetterX)
+          (float_of_int gameOverLetterY);
+        ctxt##strokeText
           (Js.string "GameOver")
           (float_of_int gameOverLetterX)
           (float_of_int gameOverLetterY))
   | WaitRetry ->
       ( ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/10));
+        ctxt##.fillStyle := Js.string "#00e020";
         ctxt##fillText
           (Js.string "GameOver")
           (float_of_int gameOverLetterX)
           (float_of_int gameOverLetterY);
+        ctxt##strokeText
+          (Js.string "GameOver")
+          (float_of_int gameOverLetterX)
+          (float_of_int gameOverLetterY);
         ctxt##.font := Js.string (Format.sprintf "%dpx serif" (windowHeight/20));
+        ctxt##.fillStyle := Js.string "#000000";
         ctxt##fillText
           (Js.string "Click to retry")
           (float_of_int retryLetterX)
