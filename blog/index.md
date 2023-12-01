@@ -312,7 +312,7 @@ dune の環境構築と build のステップを加えただけで,
   `actions/jekyll-build-pages@v1` のステップでせっかく dune でビルドしたファイルが無視されてしまっていたので, ビルド先のディレクトリ名を変えて対応してます.
 
 
-これで https://github.com/taiseiKMC/watermelon-game-jsoo の ocaml コードが
+これで [リポジトリ](https://github.com/taiseiKMC/watermelon-game-jsoo) の ocaml コードが
 そのまま [スイカゲームもどき](../index.md) で動くようになったので,
 ゲーム実装パートをもう少し見たい方は github に置いたコードを見てください.
 
