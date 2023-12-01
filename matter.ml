@@ -69,6 +69,11 @@ module Vector = struct
   let mult : vector Js.t -> float -> vector Js.t =
     fun p x ->
     _Vector##mult p x
+
+  module Operator = struct
+    let (+) = add
+    let ( * ) = mult
+  end
 end
 
 let resetEngine (engine : engine Js.t) =

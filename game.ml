@@ -227,10 +227,10 @@ let addCollisionEvents t f_gameover =
                   let open Vector in
                   let posA = a##.position in
                   let posB = b##.position in
-                  let posM = mult (add posA posB) 0.5 in
+                  let posM = Operator.((posA + posB) * 0.5) in
                   let velA = a##.velocity in
                   let velB = b##.velocity in
-                  let velM = mult (add velA velB) 0.5 in
+                  let velM = Operator.((velA + velB) * 0.5) in
                   a##.label := Label.to_string {la with alive=false};
                   b##.label := Label.to_string {lb with alive=false};
                   _Composite##remove engine##.world (Js.array [| a; b |]);
