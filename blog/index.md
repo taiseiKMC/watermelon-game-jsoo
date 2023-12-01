@@ -303,13 +303,28 @@ matter-js の vector モジュールで定義されているメンバはもち�
 dune と jekyll[^jekyll] でビルドしてデプロイするように構築しました.
 
 <https://github.com/taiseiKMC/watermelon-game-jsoo/blob/master/.github/workflows/jekyll-gh-pages.yml>
+```diff
+        uses: actions/checkout@v3
++
++     - name: Setup dune
++       uses: nmittu/setup-dune@v2
++       with:
++         packages: "js_of_ocaml js_of_ocaml-ppx lwt js_of_ocaml-lwt graphics"
++         compiler: "4.14.0"
++     - name: dune build
++       run: |
++         eval $(opam config env)
++         dune build ./main.bc.js --profile="release" --verbose --build-dir build
++
+      - name: Setup Pages
+```
 
 もともとある jekyll のビルドレシピに,
 dune の環境構築と build のステップを加えただけで,
 思いの外シンプルにできました.
 
 - ハマりポイントとしては, dune が js ファイルをビルドする(例の)場所が隠しファイル扱いだからなのか,
-  `actions/jekyll-build-pages@v1` のステップでせっかく dune でビルドしたファイルが無視されてしまっていたので, ビルド先のディレクトリ名を変えて対応してます.
+  `actions/jekyll-build-pages@v1` のステップでせっかく dune でビルドしたファイルが無視されてしまっていたので, `--build-dir build` でビルド先のディレクトリ名を変えて対応してます.
 
 
 これで [リポジトリ](https://github.com/taiseiKMC/watermelon-game-jsoo) の ocaml コードが
@@ -326,7 +341,7 @@ js 分からないから jsoo で書くわw って言っているのを見てい
 jsoo を使うと,
 - js に段階的に型を付けられる
 - ocaml の文法でコードを書くことができる
-- ocaml の資産をフロントに埋め込める
+- ocaml の資産を web のフロントで動かせる
 
 等のメリットがあるので,
 ML系言語に慣れている方には合うのではないでしょうか.
