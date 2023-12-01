@@ -18,31 +18,31 @@ let createBasket env =
   let option = object%js val isStatic=true end in
   let ground =
     _Bodies##rectangle
-      (windowWidth * 1 / 2)
-      (windowHeight * 39 / 40)
-      (basketRight - basketLeft + edgeWidth)
-      (windowHeight * 1 / 15)
+      basketBottomX
+      basketBottomY
+      (basketRight - basketLeft + basketEdgeWidth)
+      basketBottomThickness
       option in
   let wallLeft =
     _Bodies##rectangle
       basketLeft
-      (windowHeight * 1 / 2)
-      edgeWidth
-      (windowHeight * 9 / 10)
+      basketWallY
+      basketEdgeWidth
+      basketWallTall
       option in
   let wallRight =
     _Bodies##rectangle
       basketRight
-      (windowHeight * 1 / 2)
-      edgeWidth
-      (windowHeight * 9 / 10)
+      basketWallY
+      basketEdgeWidth
+      basketWallTall
       option in
   let cap =
     _Bodies##rectangle
-      (windowWidth * 1 / 2)
-      (windowHeight * 1 / 80)
+      basketBottomX
+      capRealY
       windowWidth
-      (windowHeight * 1 / 20)
+      capThickness
       object%js
         val label = capLabel
         val isStatic = true
@@ -118,8 +118,8 @@ let createBall ~preview (posX, posY) index : body Js.t =
 let adjustBallPosition env (x, y) size =
   let (module PositionData) = env.positions in
   let open PositionData in
-  let x = max x (float_of_int basketLeft +. float_of_int edgeWidth /. 2. +. size) in
-  let x = min x (float_of_int basketRight -. float_of_int edgeWidth /. 2. -. size) in
+  let x = max x (float_of_int basketLeft +. float_of_int basketEdgeWidth /. 2. +. size) in
+  let x = min x (float_of_int basketRight -. float_of_int basketEdgeWidth /. 2. -. size) in
   let y = min y (float_of_int capY -. size) in
   (x, y)
 
@@ -275,7 +275,7 @@ let addHierarchy t =
     _Bodies##circle posX posY size option in
   let rec loop i s =
     if i < Balls.max then
-      let ball = createBall (PositionData.windowWidth*7/8, PositionData.windowHeight*3/10 + i * 40) 15 i in
+      let ball = createBall (PositionData.hierarchyBallX, PositionData.hierarchyBallY + i * 40) 15 i in
       loop (i+1) (ball::s)
     else s in
   _Composite##add engine##.world (Js.array @@ Array.of_list @@ loop 0 [])
