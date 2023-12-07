@@ -354,7 +354,10 @@ jsoo を使うと,
 ML系言語に慣れている方には合うのではないでしょうか.
 
 
-KMC Advent Calender 2023 の明日の担当は pollenJP さんです.
+KMC Advent Calender 2023 の明日の担当は pollenJP さんの
+「ansible-lint のカスタムルールを利用して Ansible 内での変数命名規則を縛ってみた話」です.
+<iframe style="width:70%;height:155px;max-width:100%;margin:0 0 1.7rem;display:block;" title="kubeadm+flannelでkubernetesクラスタのIPv6環境構築" src="https://hatenablog.com/embed?url=https://zenn.dev/pollenjp/articles/2023-12-03-ansible-lint-custom-strict-naming" width="300" height="150" frameborder="0" scrolling="no"></iframe>
+
 
 # Reference
 公式は略
